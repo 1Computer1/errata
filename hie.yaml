@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:errata"
+    - path: "./example"
+      component: "executable:errata-example"
