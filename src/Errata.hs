@@ -42,7 +42,7 @@ module Errata
     , highlight
       -- * Pretty printer
     , prettyErrors
-    , prettyErrors'
+    , prettyErrorsNE
     ) where
 
 import qualified Data.List.NonEmpty as N
@@ -206,8 +206,8 @@ highlight open close = go False . concatMap (\(a, b) -> [a, b])
             in a <> close <> go False (map (\x -> x - i + 1) is) ys
 
 {-|
-Pretty prints errors using a converter. The original source is required. Returns a 'Data.Text.Lazy.Text'
-(lazy; this is the only place lazy text is used).
+Pretty prints errors using a converter. The original source is required. Returns a lazy 'Data.Text.Lazy.Text'
+(this is the only place lazy text is used). If the list is empty, an empty string is returned.
 
 Suppose we had an error of this type:
 
@@ -253,9 +253,9 @@ An example error message from this might be:
 > unexpected ]
 > expected null, true, false, ", -, digit, [, {
 -}
-prettyErrors :: Convert source error -> source -> N.NonEmpty error -> TL.Text
-prettyErrors ef source errs = prettyErrors' ef source (N.toList errs)
+prettyErrors :: Convert source error -> source -> [error] -> TL.Text
+prettyErrors ef source errs = TB.toLazyText $ renderErrors ef source errs
 
--- | Variant of 'prettyErrors' for lists. Simply gives an empty string for empty lists.
-prettyErrors' :: Convert source error -> source -> [error] -> TL.Text
-prettyErrors' ef@(Convert {..}) source errs = TB.toLazyText $ renderErrors ef source errs
+-- | A variant of 'prettyErrors' for non-empty lists. You can ensure the output is never an empty string.
+prettyErrorsNE :: Convert source error -> source -> N.NonEmpty error -> TL.Text
+prettyErrorsNE ef source errs = prettyErrors ef source (N.toList errs)
