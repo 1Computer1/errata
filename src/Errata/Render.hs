@@ -32,13 +32,10 @@ import qualified Data.Text.Lazy.Builder as TB
 import           Errata.Types
 
 -- | Renders errors.
-renderErrors :: Convert source error -> source -> [error] -> TB.Builder
+renderErrors :: Convert source -> source -> [Errata] -> TB.Builder
 renderErrors ef@(Convert {..}) source errs = unsplit "\n\n" prettified
     where
-        sortedErrata
-            = sortOn (\(Errata {..}) -> blockLocation errataBlock)
-            . map convertError
-            $ errs
+        sortedErrata = sortOn (\(Errata {..}) -> blockLocation errataBlock) $ errs
 
         -- We may arbitrarily index the source lines a lot, so a Seq is appropriate.
         -- If push comes to shove, this could be replaced with an 'Array' or a 'Vec'.
@@ -46,7 +43,7 @@ renderErrors ef@(Convert {..}) source errs = unsplit "\n\n" prettified
         prettified = map (renderErrata ef slines) sortedErrata
 
 -- | A single pretty error from metadata and source lines.
-renderErrata :: Convert source error -> S.Seq source -> Errata -> TB.Builder
+renderErrata :: Convert source -> S.Seq source -> Errata -> TB.Builder
 renderErrata ef@(Convert {..}) slines (Errata {..}) = errorMessage
     where
         errorMessage = mconcat
@@ -56,7 +53,7 @@ renderErrata ef@(Convert {..}) slines (Errata {..}) = errorMessage
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Convert source error -> S.Seq source -> Block -> TB.Builder
+renderBlock :: Convert source -> S.Seq source -> Block -> TB.Builder
 renderBlock ef@(Convert {..}) slines block@(Block {..}) = blockMessage
     where
         blockMessage = mconcat
@@ -67,7 +64,7 @@ renderBlock ef@(Convert {..}) slines block@(Block {..}) = blockMessage
 
 -- | The source lines for a block.
 renderSourceLines
-    :: Convert source error
+    :: Convert source
     -> S.Seq source
     -> Block
     -> N.NonEmpty Pointer

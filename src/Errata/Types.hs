@@ -19,18 +19,10 @@ module Errata.Types
 
 import qualified Data.Text as T
 
--- | Functions to read the source text and format error messages.
-data Convert source error = Convert
-    { {-|
-      Converts your error type into 'Errata' for pretty printing.
-
-      This assumes your error somehow has the span of the error in terms of lines and columns, in order to create
-      pointers to the source code.
-      -}
-      convertError :: error -> Errata
-
-      -- | Splits the source into lines. Usually, this is e.g. 'lines' (String) or 'Data.Text.lines' (Text).
-    , convertLines :: source -> [source]
+-- | Functions to read the source text.
+data Convert source = Convert
+    { -- | Splits the source into lines. Usually, this is e.g. 'lines' (String) or 'Data.Text.lines' (Text).
+      convertLines :: source -> [source]
 
       -- | Converts the source text to text for printing. The given source text is always a single line of the source.
     , convertLine :: source -> T.Text

@@ -16,12 +16,12 @@ this module is to allow you to customize your error messages.
 To get started, see the documentation for 'prettyErrors'. When using this module, we recommend you turn the
 @OverloadedStrings@ extension and import "Data.Text" at the very least due to the use of 'Data.Text.Text' (strict).
 
-The overall workflow to use the printer is to create a 'Convert', which entails:
+The overall workflow to use the printer is to create 'Errata' and a 'Convert', which entails:
 
-* Converting your source to 'Data.Text.Text' in 'convertLines' and 'convertLine'.
-* Converting your errors to 'Errata' in 'convertError', by filling in messages and 'Block's.
+* Converting your errors to 'Errata' by filling in messages and 'Block's.
 * To fill in a 'Block', you would have to extract source info from your errors and also create 'Pointer's.
 * In addition, you will have to choose or create a 'Style' for your block.
+* Converting your source to 'Data.Text.Text' in 'convertLines' and 'convertLine'.
 -}
 module Errata
     ( -- * Error format data
@@ -220,26 +220,28 @@ Suppose we had an error of this type:
 >     , peExpected   :: [T.Text]
 >     }
 
-Then we can create a simple 'Convert' instance like so:
+Then we can create a simple pretty printer like so:
 
 > import qualified Data.List.NonEmpty as N
 > import qualified Data.Text as T
 > import qualified Data.Text.Lazy.IO as TL
 > import           Errata
 >
-> converter :: Convert T.Text ParseError
+> toErrata :: ParseError -> Errata
+> toErrata (ParseError fp l cs ce unexpected expected) =
+>     errataSimple
+>         "error: invalid syntax"
+>         (blockSimple basicStyle fp l (cs, ce)
+>             ("unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
+>
+> converter :: Convert T.Text
 > converter = Convert
->    { convertError = \(ParseError fp l cs ce unexpected expected) ->
->        errataSimple
->            "error: invalid syntax"
->            (blockSimple basicStyle fp l (cs, ce)
->                ("unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
->    , convertLines = T.lines
+>    { convertLines = T.lines
 >    , convertLine = id
 >    }
 >
 > printErrors :: T.Text -> N.NonEmpty ParseError -> IO ()
-> printErrors source es = TL.putStrLn $ prettyErrors converter source es
+> printErrors source es = TL.putStrLn $ prettyErrors converter source (toErrata <$> es)
 
 Note that in the above example, we have @OverloadedStrings@ enabled to reduce uses of 'Data.Text.pack'.
 
@@ -253,9 +255,9 @@ An example error message from this might be:
 > unexpected ]
 > expected null, true, false, ", -, digit, [, {
 -}
-prettyErrors :: Convert source error -> source -> [error] -> TL.Text
+prettyErrors :: Convert source -> source -> [Errata] -> TL.Text
 prettyErrors ef source errs = TB.toLazyText $ renderErrors ef source errs
 
 -- | A variant of 'prettyErrors' for non-empty lists. You can ensure the output is never an empty string.
-prettyErrorsNE :: Convert source error -> source -> N.NonEmpty error -> TL.Text
+prettyErrorsNE :: Convert source -> source -> N.NonEmpty Errata -> TL.Text
 prettyErrorsNE ef source errs = prettyErrors ef source (N.toList errs)
