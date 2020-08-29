@@ -17,6 +17,10 @@ build-type:    Simple
 extra-doc-files:
     README.md
     CHANGELOG.md
+tested-with:
+    GHC == 8.10.1
+  , GHC == 8.8.3
+  , GHC == 8.6.5
 
 source-repository head
   type:     git
@@ -24,9 +28,9 @@ source-repository head
 
 common common-options
   build-depends:
-      base >= 4.11 && < 5.0
+      base >= 4.12 && < 5.0
     , containers >= 0.6.0.1
-    , text >= 1.2.2.0
+    , text >= 1.2.3
   ghc-options:
       -Wall
       -Wcompat
