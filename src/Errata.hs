@@ -31,6 +31,11 @@ module Errata
       -- * Blocks and pointers
     , Block(..)
     , blockSimple
+    , blockSimple'
+    , blockConnected
+    , blockConnected'
+    , blockMerged
+    , blockMerged'
     , Pointer(..)
     , pointerColumns
       -- * Styling options
@@ -52,28 +57,119 @@ import qualified Data.Text.Lazy.Builder as TB
 import           Errata.Render
 import           Errata.Types
 
--- | Creates a simple error that has a header and single block.
-errataSimple :: T.Text -> Block -> Errata
-errataSimple header pointer = Errata
-    { errataHeader = Just header
+-- | Creates a simple error that has a single block, with an optional header or body.
+errataSimple
+    :: Maybe T.Text -- ^ The header.
+    -> Block        -- ^ The block.
+    -> Maybe T.Text -- ^ The body.
+    -> Errata
+errataSimple header pointer body = Errata
+    { errataHeader = header
     , errataBlock = pointer
     , errataBlocks = []
-    , errataBody = Nothing
+    , errataBody = body
     }
 
--- | A simple block that points to only one line and has a body message.
+-- | A simple block that points to only one line and optionally has a label or a body message.
 blockSimple
-    :: Style      -- ^ The style of the pointer.
-    -> FilePath   -- ^ The filepath.
-    -> Int        -- ^ The line number starting at 1.
-    -> (Int, Int) -- ^ The column span. These start at 1.
-    -> T.Text     -- ^ The body message.
+    :: Style        -- ^ The style of the pointer.
+    -> FilePath     -- ^ The filepath.
+    -> Int          -- ^ The line number starting at 1.
+    -> (Int, Int)   -- ^ The column span. These start at 1.
+    -> Maybe T.Text -- ^ The label.
+    -> Maybe T.Text -- ^ The body message.
     -> Block
-blockSimple style fp l (cs, ce) m = Block
+blockSimple style fp l (cs, ce) m lbl = Block
     { blockStyle = style
     , blockLocation = (fp, l, cs)
-    , blockPointers = [Pointer l cs ce False Nothing]
-    , blockBody = Just m
+    , blockPointers = [Pointer l cs ce False lbl]
+    , blockBody = m
+    }
+
+-- | A variant of 'blockSimple' that only points at one column.
+blockSimple'
+    :: Style        -- ^ The style of the pointer.
+    -> FilePath     -- ^ The filepath.
+    -> Int          -- ^ The line number starting at 1.
+    -> Int          -- ^ The column number starting at 1.
+    -> Maybe T.Text -- ^ The label.
+    -> Maybe T.Text -- ^ The body message.
+    -> Block
+blockSimple' style fp l c lbl m = Block
+    { blockStyle = style
+    , blockLocation = (fp, l, c)
+    , blockPointers = [Pointer l c (c + 1) False lbl]
+    , blockBody = m
+    }
+
+-- | A block that points to two parts of the source that are visually connected together.
+blockConnected
+    :: Style                         -- ^ The style of the pointer.
+    -> FilePath                      -- ^ The filepath.
+    -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
+    -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
+    -> Maybe T.Text                  -- ^ The body message.
+    -> Block
+blockConnected style fp (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) m = Block
+    { blockStyle = style
+    , blockLocation = (fp, l1, cs1)
+    , blockPointers = [Pointer l1 cs1 ce1 True lbl1, Pointer l2 cs2 ce2 True lbl2]
+    , blockBody = m
+    }
+
+-- | A variant of 'blockConnected' where the pointers point at only one column.
+blockConnected'
+    :: Style                    -- ^ The style of the pointer.
+    -> FilePath                 -- ^ The filepath.
+    -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
+    -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
+    -> Maybe T.Text             -- ^ The body message.
+    -> Block
+blockConnected' style fp (l1, c1, lbl1) (l2, c2, lbl2) m = Block
+    { blockStyle = style
+    , blockLocation = (fp, l1, c1)
+    , blockPointers = [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
+    , blockBody = m
+    }
+
+{-|
+A block that points to two parts of the source that are visually connected together.
+
+If the two parts of the source happen to be on the same line, the pointers are merged into one.
+-}
+blockMerged
+    :: Style                         -- ^ The style of the pointer.
+    -> FilePath                      -- ^ The filepath.
+    -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
+    -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
+    -> Maybe T.Text                  -- ^ The label for when the two pointers are merged into one.
+    -> Maybe T.Text                  -- ^ The body message.
+    -> Block
+blockMerged style fp (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl m = Block
+    { blockStyle = style
+    , blockLocation = (fp, l1, cs1)
+    , blockPointers = if l1 == l2
+        then [Pointer l1 cs1 ce2 False lbl]
+        else [Pointer l1 cs1 ce1 True lbl1, Pointer l2 cs2 ce2 True lbl2]
+    , blockBody = m
+    }
+
+-- | A variant of 'blockMerged' where the pointers point at only one column.
+blockMerged'
+    :: Style                    -- ^ The style of the pointer.
+    -> FilePath                 -- ^ The filepath.
+    -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
+    -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
+    -> Maybe T.Text             -- ^ The label for when the two pointers are merged into one.
+    -> Maybe T.Text             -- ^ The body message.
+    -> Block
+blockMerged' style fp (l1, c1, lbl1) (l2, c2, lbl2) lbl m = Block
+    { blockStyle = style
+    , blockLocation = (fp, l1, c1)
+    , blockPointers = if l1 == l2
+        then [Pointer l1 c1 (c2 + 1) False lbl]
+        else [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
+    , blockBody = m
     }
 
 {-|
@@ -236,9 +332,9 @@ Then we can create a simple pretty printer like so:
 >
 > converter :: Convert T.Text
 > converter = Convert
->    { convertLines = T.lines
->    , convertLine = id
->    }
+>     { convertLines = T.lines
+>     , convertLine = id
+>     }
 >
 > printErrors :: T.Text -> N.NonEmpty ParseError -> IO ()
 > printErrors source es = TL.putStrLn $ prettyErrors converter source (toErrata <$> es)
