@@ -43,6 +43,8 @@ library
   hs-source-dirs: src
   exposed-modules:
       Errata
+      Errata.Render
+      Errata.Types
 
 executable errata-example
   import:         common-options
