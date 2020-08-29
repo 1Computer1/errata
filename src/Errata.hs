@@ -310,8 +310,7 @@ Suppose we had an error of this type:
 > data ParseError = ParseError
 >     { peFile       :: FilePath
 >     , peLine       :: Int
->     , peColStart   :: Int
->     , peColEnd     :: Int
+>     , peCol        :: Int
 >     , peUnexpected :: T.Text
 >     , peExpected   :: [T.Text]
 >     }
@@ -324,11 +323,13 @@ Then we can create a simple pretty printer like so:
 > import           Errata
 >
 > toErrata :: ParseError -> Errata
-> toErrata (ParseError fp l cs ce unexpected expected) =
+> toErrata (ParseError fp l c unexpected expected) =
 >     errataSimple
->         "error: invalid syntax"
->         (blockSimple basicStyle fp l (cs, ce)
->             ("unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
+>         (Just "error: invalid syntax")
+>         (blockSimple basicStyle fp l (c, c + T.length unexpected)
+>             (Just ("unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
+>             Nothing)
+>         Nothing
 >
 > converter :: Convert T.Text
 > converter = Convert
@@ -336,7 +337,7 @@ Then we can create a simple pretty printer like so:
 >     , convertLine = id
 >     }
 >
-> printErrors :: T.Text -> N.NonEmpty ParseError -> IO ()
+> printErrors :: T.Text -> [ParseError] -> IO ()
 > printErrors source es = TL.putStrLn $ prettyErrors converter source (toErrata <$> es)
 
 Note that in the above example, we have @OverloadedStrings@ enabled to reduce uses of 'Data.Text.pack'.
