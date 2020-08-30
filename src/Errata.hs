@@ -52,7 +52,7 @@ import qualified Data.List.NonEmpty as N
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TB
-import           Errata.Render
+import           Errata.Internal.Render
 import           Errata.Types
 
 -- | Creates a simple error that has a single block, with an optional header or body.

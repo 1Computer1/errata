@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 {-|
-Module      : Errata.Render
+Module      : Errata.Internal.Render
 Copyright   : (c) 2020 comp
 License     : MIT
 Maintainer  : onecomputer00@gmail.com
@@ -14,7 +14,7 @@ Functions for rendering the errors. You should not need to import this, as these
 
 This module is internal, and may break across non-breaking versions.
 -}
-module Errata.Render
+module Errata.Internal.Render
     ( renderErrors
     , renderErrata
     , renderBlock

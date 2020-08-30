@@ -47,7 +47,7 @@ library
   hs-source-dirs: src
   exposed-modules:
       Errata
-      Errata.Render
+      Errata.Internal.Render
       Errata.Types
 
 executable errata-example
