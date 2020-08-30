@@ -77,7 +77,7 @@ blockSimple
     -> Maybe T.Text -- ^ The label.
     -> Maybe T.Text -- ^ The body message.
     -> Block
-blockSimple style fp l (cs, ce) m lbl = Block
+blockSimple style fp l (cs, ce) lbl m = Block
     { blockStyle = style
     , blockLocation = (fp, l, cs)
     , blockPointers = [Pointer l cs ce False lbl]
