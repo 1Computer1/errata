@@ -324,9 +324,8 @@ Then we can create a simple pretty printer like so:
 > toErrata (ParseError fp l c unexpected expected) =
 >     errataSimple
 >         (Just "error: invalid syntax")
->         (blockSimple basicStyle fp l (c, c + T.length unexpected)
->             (Just ("unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
->             Nothing)
+>         (blockSimple basicStyle fp l (c, c + T.length unexpected) Nothing
+>             (Just $ "unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
 >         Nothing
 >
 > converter :: Convert T.Text
