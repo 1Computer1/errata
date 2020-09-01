@@ -30,7 +30,7 @@ common common-options
   build-depends:
       base >= 4.12 && < 5.0
     , containers >= 0.6.0.1
-    , text >= 1.2.3
+    , text >= 1.2.3.1
   ghc-options:
       -Wall
       -Wcompat
@@ -48,6 +48,7 @@ library
   exposed-modules:
       Errata
       Errata.Internal.Render
+      Errata.Source
       Errata.Types
 
 executable errata-example

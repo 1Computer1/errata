@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications  #-}
 
 module Main where
 
@@ -26,14 +27,8 @@ toErrata (ParseError fp l c unexpected expected) =
             (Just $ "unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
         Nothing
 
-converter :: Convert T.Text
-converter = Convert
-   { convertLines = T.lines
-   , convertLine = id
-   }
-
 printErrors :: T.Text -> [ParseError] -> IO ()
-printErrors source es = TL.putStrLn $ prettyErrors converter source (toErrata <$> es)
+printErrors source es = TL.putStrLn $ prettyErrors source (toErrata <$> es)
 
 --------------
 -- Examples --
@@ -47,8 +42,7 @@ main :: IO ()
 main = do
     putStrLn "Simple single pointer:"
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc [Pointer 1 2 4 False (Just "x")]
         ]
@@ -56,8 +50,7 @@ main = do
 
     putStrLn "Nothing is connected, some inner labels:"
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
             [ Pointer 1 2 4 False (Just "x")
@@ -70,8 +63,7 @@ main = do
 
     putStrLn "Everything is connected."
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
             [ Pointer 1 2 4 True (Just "x")
@@ -84,8 +76,7 @@ main = do
 
     putStrLn "Only one line is connected, and one of them is skewered through:"
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
             [ Pointer 1 2 4 True (Just "x")
@@ -98,8 +89,7 @@ main = do
 
     putStrLn "Everything is connected except for 2. One of them does not have a label:"
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
             [ Pointer 1 2 4 True (Just "x")
@@ -120,8 +110,7 @@ main = do
 
     putStrLn "Example from the readme:"
     putStrLn ""
-    TL.putStrLn $ prettyErrors
-        converter
+    TL.putStrLn $ prettyErrors @String
         "foo = if 1 > 2\n    then 100\n    else \"uh oh\""
         [ Errata
             (Just "\x1b[31merror[E001]: mismatching types in `if` expression\x1b[0m")

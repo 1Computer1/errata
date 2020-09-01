@@ -29,47 +29,48 @@ import           Data.Maybe
 import           Data.String (IsString)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
+import           Errata.Source
 import           Errata.Types
 
 -- | Renders errors.
-renderErrors :: Convert source -> source -> [Errata] -> TB.Builder
-renderErrors ef@(Convert {..}) source errs = unsplit "\n\n" prettified
+renderErrors :: Source source => source -> [Errata] -> TB.Builder
+renderErrors source errs = unsplit "\n\n" prettified
     where
         sortedErrata = sortOn (\(Errata {..}) -> blockLocation errataBlock) $ errs
 
         -- We may arbitrarily index the source lines a lot, so a Seq is appropriate.
         -- If push comes to shove, this could be replaced with an 'Array' or a 'Vec'.
-        slines = S.fromList (convertLines source)
-        prettified = map (renderErrata ef slines) sortedErrata
+        slines = S.fromList (sourceToLines source)
+        prettified = map (renderErrata slines) sortedErrata
 
 -- | A single pretty error from metadata and source lines.
-renderErrata :: Convert source -> S.Seq source -> Errata -> TB.Builder
-renderErrata ef@(Convert {..}) slines (Errata {..}) = errorMessage
+renderErrata :: Source source => S.Seq source -> Errata -> TB.Builder
+renderErrata slines (Errata {..}) = errorMessage
     where
         errorMessage = mconcat
             [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" (map (renderBlock ef slines) (errataBlock : errataBlocks))
+            , unsplit "\n\n" (map (renderBlock slines) (errataBlock : errataBlocks))
             , TB.fromText $ maybe "" ("\n\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Convert source -> S.Seq source -> Block -> TB.Builder
-renderBlock ef@(Convert {..}) slines block@(Block {..}) = blockMessage
+renderBlock :: Source source => S.Seq source -> Block -> TB.Builder
+renderBlock slines block@(Block {..}) = blockMessage
     where
         blockMessage = mconcat
             [ TB.fromText $ styleLocation blockStyle blockLocation
-            , maybe "" ("\n" <>) (renderSourceLines ef slines block <$> N.nonEmpty blockPointers)
+            , maybe "" ("\n" <>) (renderSourceLines slines block <$> N.nonEmpty blockPointers)
             , TB.fromText $ maybe "" ("\n" <>) blockBody
             ]
 
 -- | The source lines for a block.
 renderSourceLines
-    :: Convert source
-    -> S.Seq source
+    :: Source source
+    => S.Seq source
     -> Block
     -> N.NonEmpty Pointer
     -> TB.Builder
-renderSourceLines (Convert {..}) slines (Block {..}) lspans = unsplit "\n" sourceLines
+renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
     where
         Style {..} = blockStyle
 
@@ -81,7 +82,7 @@ renderSourceLines (Convert {..}) slines (Block {..}) lspans = unsplit "\n" sourc
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
         showLine :: [(Int, Int)] -> Int -> TB.Builder
-        showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . convertLine) $ S.lookup (n - 1) slines
+        showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . sourceToText) $ S.lookup (n - 1) slines
 
         -- Generic prefix without line number.
         prefix = mconcat

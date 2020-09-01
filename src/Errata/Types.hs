@@ -9,8 +9,7 @@ Portability : portable
 Type definitions. All of these are re-exported in "Errata", so you should not need to import this module.
 -}
 module Errata.Types
-    ( Convert(..)
-    , Errata(..)
+    ( Errata(..)
     , Block(..)
     , Pointer(..)
     , pointerColumns
@@ -18,15 +17,6 @@ module Errata.Types
     ) where
 
 import qualified Data.Text as T
-
--- | Functions to read the source text.
-data Convert source = Convert
-    { -- | Splits the source into lines. Usually, this is e.g. 'lines' (String) or 'Data.Text.lines' (Text).
-      convertLines :: source -> [source]
-
-      -- | Converts the source text to text for printing. The given source text is always a single line of the source.
-    , convertLine :: source -> T.Text
-    }
 
 -- | A collection of information for pretty printing an error.
 data Errata = Errata
