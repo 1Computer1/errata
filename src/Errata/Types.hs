@@ -9,10 +9,13 @@ Portability : portable
 Type definitions. All of these are re-exported in "Errata", so you should not need to import this module.
 -}
 module Errata.Types
-    ( Errata(..)
+    ( -- * Error format data
+      Errata(..)
+      -- * Blocks and pointers
     , Block(..)
     , Pointer(..)
     , pointerColumns
+      -- * Styling options
     , Style(..)
     ) where
 
@@ -62,11 +65,11 @@ A pointer may also have a label that will display inline.
 A pointer may also be connected to all the other pointers within the same block.
 -}
 data Pointer = Pointer
-    { pointerLine     :: Int          -- ^ The line of the span.
-    , pointerColStart :: Int          -- ^ The starting column of the span.
-    , pointerColEnd   :: Int          -- ^ The ending column of the span.
+    { pointerLine     :: Int          -- ^ The line of the pointer.
+    , pointerColStart :: Int          -- ^ The starting column of the pointer.
+    , pointerColEnd   :: Int          -- ^ The ending column of the pointer.
     , pointerConnect  :: Bool         -- ^ Whether this pointer connects with other pointers.
-    , pointerLabel    :: Maybe T.Text -- ^ An optional label for the span.
+    , pointerLabel    :: Maybe T.Text -- ^ An optional label for the pointer.
     }
 
 -- | Gets the column span for a 'Pointer'.

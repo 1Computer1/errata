@@ -14,11 +14,9 @@ this module is to allow you to customize your error messages.
 To get started, see the documentation for 'prettyErrors'. When using this module, we recommend you turn the
 @OverloadedStrings@ extension and import "Data.Text" at the very least due to the use of 'Data.Text.Text' (strict).
 
-The overall workflow to use the printer is to convert your error type to 'Errata', which entails:
-
-* Converting your errors to 'Errata' by filling in messages and 'Block's.
-* To fill in a 'Block', you would have to extract source info from your errors and also create 'Pointer's.
-* In addition, you will have to choose or create a 'Style' for your block.
+The overall workflow to use the printer is to convert your error type to 'Errata', which entails converting your errors
+to 'Errata' by filling in messages and 'Block's. You can create 'Errata' and 'Block' from their constructors, or use
+the convenience functions for common usecases, like 'errataSimple' and 'blockSimple'.
 -}
 module Errata
     ( -- * Error format data
@@ -62,9 +60,9 @@ errataSimple
     -> Block        -- ^ The block.
     -> Maybe T.Text -- ^ The body.
     -> Errata
-errataSimple header pointer body = Errata
+errataSimple header block body = Errata
     { errataHeader = header
-    , errataBlock = pointer
+    , errataBlock = block
     , errataBlocks = []
     , errataBody = body
     }
