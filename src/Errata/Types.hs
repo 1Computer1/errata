@@ -6,7 +6,8 @@ Maintainer  : onecomputer00@gmail.com
 Stability   : stable
 Portability : portable
 
-Type definitions. All of these are re-exported in "Errata", so you should not need to import this module.
+Type definitions. Most of these are re-exported in "Errata", so you should not need to import this module, unless you
+need some of the helper functions for making new functionality on top of Errata.
 -}
 module Errata.Types
     ( -- * Error format data
@@ -17,6 +18,7 @@ module Errata.Types
     , pointerColumns
       -- * Styling options
     , Style(..)
+    , highlight
     ) where
 
 import qualified Data.Text as T
@@ -134,3 +136,20 @@ data Style = Style
       -}
     , styleUpDownRight :: T.Text
     }
+
+-- | Adds highlighting to spans of text by enclosing it with some text e.g ANSI escape codes.
+highlight
+    :: T.Text       -- ^ Text to add before.
+    -> T.Text       -- ^ Text to add after.
+    -> [(Int, Int)] -- ^ Indices to enclose. These are column spans, starting at 1. They must not overlap.
+    -> T.Text       -- ^ Text to highlight.
+    -> T.Text
+highlight open close = go False . concatMap (\(a, b) -> [a, b])
+    where
+        go _ [] xs = xs
+        go False (i:is) xs =
+            let (a, ys) = T.splitAt (i - 1) xs
+            in a <> open <> go True (map (\x -> x - i + 1) is) ys
+        go True (i:is) xs =
+            let (a, ys) = T.splitAt (i - 1) xs
+            in a <> close <> go False (map (\x -> x - i + 1) is) ys

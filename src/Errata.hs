@@ -31,19 +31,15 @@ module Errata
     , blockMerged
     , blockMerged'
     , Pointer(..)
-    , pointerColumns
       -- * Styling options
     , Style(..)
     , basicStyle
     , fancyStyle
     , fancyRedStyle
     , fancyYellowStyle
-    , highlight
       -- * Pretty printer
     , prettyErrors
     , prettyErrorsNE
-      -- * Source text class
-    , Source(..)
     ) where
 
 import qualified Data.List.NonEmpty as N
@@ -280,23 +276,6 @@ fancyYellowStyle = Style
     , styleUpRight = "\x1b[33m└\x1b[0m"
     , styleUpDownRight = "\x1b[33m├\x1b[0m"
     }
-
--- | Adds highlighting to spans of text by enclosing it with some text e.g ANSI escape codes.
-highlight
-    :: T.Text       -- ^ Text to add before.
-    -> T.Text       -- ^ Text to add after.
-    -> [(Int, Int)] -- ^ Indices to enclose. These are column spans, starting at 1. They must not overlap.
-    -> T.Text       -- ^ Text to highlight.
-    -> T.Text
-highlight open close = go False . concatMap (\(a, b) -> [a, b])
-    where
-        go _ [] xs = xs
-        go False (i:is) xs =
-            let (a, ys) = T.splitAt (i - 1) xs
-            in a <> open <> go True (map (\x -> x - i + 1) is) ys
-        go True (i:is) xs =
-            let (a, ys) = T.splitAt (i - 1) xs
-            in a <> close <> go False (map (\x -> x - i + 1) is) ys
 
 {-|
 Pretty prints errors. The original source is required. Returns 'Data.Text.Lazy.Text' (lazy). If the list is empty,
