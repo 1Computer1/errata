@@ -4,7 +4,9 @@ version:       0.1.0.0
 synopsis:      Source code error pretty printing
 description:
     An extremely customizable error pretty printer that can handle many kinds of error formatting.
-    It can handle errors that are disconnected, connected, and/or spanning multiple lines.
+    It can handle errors that are connected, disconnected, and those spanning multiple lines.
+    .
+    You can get started by importing the "Errata" module.
 homepage:      https://github.com/1Computer1/errata
 bug-reports:   https://github.com/1Computer1/errata/issues
 license:       MIT
@@ -12,7 +14,7 @@ license-file:  LICENSE
 author:        comp
 maintainer:    onecomputer00@gmail.com
 copyright:     (c) 2020 comp
-category:      Text
+category:      Pretty Printer
 build-type:    Simple
 extra-doc-files:
     README.md
