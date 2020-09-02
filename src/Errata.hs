@@ -11,7 +11,7 @@ Portability : portable
 This module is for creating pretty error messages. We assume very little about the format you want to use, so much of
 this module is to allow you to customize your error messages.
 
-To get started, see the documentation for 'prettyErrors'. When using this module, we recommend you turn the
+To get started, see the documentation for 'prettyErrors'. When using this module, we recommend you turn on the
 @OverloadedStrings@ extension and import "Data.Text" at the very least due to the use of 'Data.Text.Text' (strict).
 
 The overall workflow to use the printer is to convert your error type to 'Errata', which entails converting your errors
