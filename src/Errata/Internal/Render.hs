@@ -106,7 +106,8 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- The resulting source lines.
         -- Extra prefix for padding.
-        sourceLines = prefix : makeSourceLines 0 [minLine .. maxLine]
+        sourceLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
+            : makeSourceLines 0 [minLine .. maxLine]
 
         -- Whether there will be a multiline span.
         hasConnMulti = M.size (M.filter (any pointerConnect) pointersGrouped) > 1
