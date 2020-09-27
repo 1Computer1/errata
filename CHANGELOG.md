@@ -2,7 +2,7 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
-## Unreleased
+## 0.2.0.0
 
 * Added new `blockHeader` field to `Block`, which will put text underneath the location text but above the source lines. This also affects all the block helper functions, which now have an argument for the header.
 
