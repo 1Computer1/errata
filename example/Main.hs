@@ -110,7 +110,7 @@ main = do
         (pure (ParseError "./comma.json" 2 18 "]" ["null", "true", "false", "\"", "-", "digit", "[", "{"]))
     putStrLn ""
 
-    putStrLn "Example from the readme:"
+    putStrLn "Example 1 from the readme:"
     putStrLn ""
     TL.putStrLn $ prettyErrors @String
         "foo = if 1 > 2\n    then 100\n    else \"uh oh\""
@@ -135,5 +135,22 @@ main = do
                 Nothing
             ]
             (Just "\x1b[33mnote: use --explain E001 to learn more\x1b[0m")
+        ]
+    putStrLn ""
+
+    putStrLn "Example 2 from the readme:"
+    putStrLn ""
+    TL.putStrLn $ prettyErrors @String
+        "sum xs = fold (+) 0 xs"
+        [ Errata
+            (Just "\x1b[31m─────── NAME UNKNOWN ───────\x1b[0m\n\nThe name \x1b[31mfold\x1b[0m was not found.\n")
+            (Block
+                fancyRedStyle { styleUnderline = " " }
+                ("file.hs", 1, 10)
+                Nothing
+                [Pointer 1 10 14 False Nothing]
+                Nothing)
+            []
+            (Just "Did you mean to use one of these?\n\n    \x1b[31mfoldl\x1b[0m\n    \x1b[31mfoldr\x1b[0m")
         ]
     putStrLn ""
