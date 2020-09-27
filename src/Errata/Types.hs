@@ -10,8 +10,14 @@ Type definitions. Most of these are re-exported in "Errata", so you should not n
 need some of the helper functions for making new functionality on top of Errata.
 -}
 module Errata.Types
-    ( -- * Error format data
-      Errata(..)
+    ( -- * Type synonyms
+      Line
+    , Column
+    , Header
+    , Body
+    , Label
+      -- * Error format data
+    , Errata(..)
       -- * Blocks and pointers
     , Block(..)
     , Pointer(..)
@@ -23,12 +29,27 @@ module Errata.Types
 
 import qualified Data.Text as T
 
+-- | Line number, starts at 1.
+type Line = Int
+
+-- | Column number, starts at 1.
+type Column = Int
+
+-- | Header text. Generally goes above things.
+type Header = T.Text
+
+-- | Body text. Generally goes below things.
+type Body = T.Text
+
+-- | Label text. Generally goes inline with things.
+type Label = T.Text
+
 -- | A collection of information for pretty printing an error.
 data Errata = Errata
-    { errataHeader :: Maybe T.Text -- ^ The message that appears above all the blocks.
+    { errataHeader :: Maybe Header -- ^ The message that appears above all the blocks.
     , errataBlock  :: Block        -- ^ The main error block, which will be used for sorting errors.
     , errataBlocks :: [Block]      -- ^ Extra blocks in the source code to display. Blocks themselves are not sorted.
-    , errataBody   :: Maybe T.Text -- ^ The message that appears below all the blocks.
+    , errataBody   :: Maybe Body   -- ^ The message that appears below all the blocks.
     }
 
 {-|
@@ -45,10 +66,10 @@ data Block = Block
 
       This is used for sorting errors, as well as to create the text that details the location.
       -}
-    , blockLocation :: (FilePath, Int, Int)
+    , blockLocation :: (FilePath, Line, Column)
 
       -- | The header message for the block. This will appear below the location and above the source lines.
-    , blockHeader :: Maybe T.Text
+    , blockHeader :: Maybe Header
 
       {-|
       The block's pointers. These are used to "point out" parts of the source code in this block.
@@ -59,7 +80,7 @@ data Block = Block
     , blockPointers :: [Pointer]
 
       -- | The body message for the block. This will appear below the source lines.
-    , blockBody :: Maybe T.Text
+    , blockBody :: Maybe Body
     }
 
 {-|
@@ -70,24 +91,24 @@ A pointer may also have a label that will display inline.
 A pointer may also be connected to all the other pointers within the same block.
 -}
 data Pointer = Pointer
-    { pointerLine     :: Int          -- ^ The line of the pointer.
-    , pointerColStart :: Int          -- ^ The starting column of the pointer.
-    , pointerColEnd   :: Int          -- ^ The ending column of the pointer.
-    , pointerConnect  :: Bool         -- ^ Whether this pointer connects with other pointers.
-    , pointerLabel    :: Maybe T.Text -- ^ An optional label for the pointer.
+    { pointerLine     :: Line        -- ^ The line of the pointer.
+    , pointerColStart :: Column      -- ^ The starting column of the pointer.
+    , pointerColEnd   :: Column      -- ^ The ending column of the pointer.
+    , pointerConnect  :: Bool        -- ^ Whether this pointer connects with other pointers.
+    , pointerLabel    :: Maybe Label -- ^ An optional label for the pointer.
     }
 
 -- | Gets the column span for a 'Pointer'.
-pointerColumns :: Pointer -> (Int, Int)
+pointerColumns :: Pointer -> (Line, Column)
 pointerColumns p = (pointerColStart p, pointerColEnd p)
 
 -- | Stylization options for a block, e.g. characters to use.
 data Style = Style
     { -- | Shows the location of a block at a file, line, and column.
-      styleLocation :: (FilePath, Int, Int) -> T.Text
+      styleLocation :: (FilePath, Line, Column) -> T.Text
 
       -- | Shows the line number /n/ for a source line. The result should visually be the same length as just @show n@.
-    , styleNumber :: Int -> T.Text
+    , styleNumber :: Line -> T.Text
 
       {-|
       Stylize a source line.
@@ -95,7 +116,7 @@ data Style = Style
       Column pointers of the text that are being underlined are given for highlighting purposes. The result of this
       should visually take up the same space as the original line.
       -}
-    , styleLine :: [(Int, Int)] -> T.Text -> T.Text
+    , styleLine :: [(Column, Column)] -> T.Text -> T.Text
 
       {-|
       The text to use as an ellipsis in the position of line numbers for when lines are omitted. This should visually
@@ -142,10 +163,10 @@ data Style = Style
 
 -- | Adds highlighting to spans of text by enclosing it with some text e.g ANSI escape codes.
 highlight
-    :: T.Text       -- ^ Text to add before.
-    -> T.Text       -- ^ Text to add after.
-    -> [(Int, Int)] -- ^ Indices to enclose. These are column spans, starting at 1. They must not overlap.
-    -> T.Text       -- ^ Text to highlight.
+    :: T.Text             -- ^ Text to add before.
+    -> T.Text             -- ^ Text to add after.
+    -> [(Column, Column)] -- ^ Indices to enclose. These are column spans, starting at 1. They must not overlap.
+    -> T.Text             -- ^ Text to highlight.
     -> T.Text
 highlight open close = go False . concatMap (\(a, b) -> [a, b])
     where

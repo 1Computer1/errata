@@ -82,7 +82,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
-        showLine :: [(Int, Int)] -> Int -> TB.Builder
+        showLine :: [(Column, Column)] -> Line -> TB.Builder
         showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . sourceToText) $ S.lookup (n - 1) slines
 
         -- Generic prefix without line number.
@@ -96,7 +96,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
             ]
 
         -- Prefix with a line number.
-        linePrefix :: Int -> TB.Builder
+        linePrefix :: Line -> TB.Builder
         linePrefix n = mconcat
             [ TB.fromText (styleNumber n), replicateB (padding - length (show n)) " ", " "
             , TB.fromText styleLinePrefix, " "
@@ -114,18 +114,18 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
         hasConnMulti = M.size (M.filter (any pointerConnect) pointersGrouped) > 1
 
         -- Whether line /n/ has a connection to somewhere else (including the same line).
-        hasConn :: Int -> Bool
+        hasConn :: Line -> Bool
         hasConn n = maybe False (any pointerConnect) $ M.lookup n pointersGrouped
 
         -- Whether line /n/ has a connection to a line before or after it (but not including).
-        connAround :: Int -> (Bool, Bool)
+        connAround :: Line -> (Bool, Bool)
         connAround n =
             let (a, b) = M.split n pointersGrouped
             in ((any . any) pointerConnect a, (any . any) pointerConnect b)
 
         -- Makes the source lines.
         -- We have an @extra@ parameter to keep track of extra lines when spanning multiple lines.
-        makeSourceLines :: Int -> [Int] -> [TB.Builder]
+        makeSourceLines :: Line -> [Line] -> [TB.Builder]
 
         -- No lines left.
         makeSourceLines _ [] = []
@@ -281,11 +281,11 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
 -- | Makes a line of decorations below the source.
 foldDecorations
-    :: (Int -> Bool -> [Pointer] -> TB.Builder) -- ^ Catch up from the previous pointer to this pointer.
-    -> TB.Builder                               -- ^ Something in the middle.
-    -> (Int -> TB.Builder)                      -- ^ Reach the next pointer.
+    :: (Column -> Bool -> [Pointer] -> TB.Builder) -- ^ Catch up from the previous pointer to this pointer.
+    -> TB.Builder                                  -- ^ Something in the middle.
+    -> (Column -> TB.Builder)                      -- ^ Reach the next pointer.
     -> [Pointer]
-    -> (TB.Builder, Int)
+    -> (TB.Builder, Column)
 foldDecorations catchUp something reachAfter ps =
     let (decor, finalCol, _, _) = foldr
             (\(Pointer {..}) (xs, c, rest, isFirst) ->

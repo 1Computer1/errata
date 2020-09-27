@@ -17,6 +17,14 @@ To get started, see the documentation for 'prettyErrors'. When using this module
 The overall workflow to use the printer is to convert your error type to 'Errata', which entails converting your errors
 to 'Errata' by filling in messages and 'Block's. You can create 'Errata' and 'Block' from their constructors, or use
 the convenience functions for common usecases, like 'errataSimple' and 'blockSimple'.
+
+For easier reading, we define:
+
+> type Line = Int
+> type Column = Int
+> type Header = Text
+> type Body = Text
+> type Label = Text
 -}
 module Errata
     ( -- * Error format data
@@ -52,9 +60,9 @@ import           Errata.Types
 
 -- | Creates a simple error that has a single block, with an optional header or body.
 errataSimple
-    :: Maybe T.Text -- ^ The header.
+    :: Maybe Header -- ^ The header.
     -> Block        -- ^ The block.
-    -> Maybe T.Text -- ^ The body.
+    -> Maybe Body   -- ^ The body.
     -> Errata
 errataSimple header block body = Errata
     { errataHeader = header
@@ -65,11 +73,11 @@ errataSimple header block body = Errata
 
 -- | A simple block that points to only one line and optionally has a label, header, or body message.
 blockSimple
-    :: Style                         -- ^ The style of the pointer.
-    -> FilePath                      -- ^ The filepath.
-    -> Maybe T.Text                  -- ^ The header message.
-    -> (Int, Int, Int, Maybe T.Text) -- ^ The line number and column span, starting at 1, as well as a label.
-    -> Maybe T.Text                  -- ^ The body message.
+    :: Style                               -- ^ The style of the pointer.
+    -> FilePath                            -- ^ The filepath.
+    -> Maybe Header                        -- ^ The header message.
+    -> (Line, Column, Column, Maybe Label) -- ^ The line number and column span, starting at 1, and a label.
+    -> Maybe Body                          -- ^ The body message.
     -> Block
 blockSimple style fp hm (l, cs, ce, lbl) bm = Block
     { blockStyle = style
@@ -81,11 +89,11 @@ blockSimple style fp hm (l, cs, ce, lbl) bm = Block
 
 -- | A variant of 'blockSimple' that only points at one column.
 blockSimple'
-    :: Style                    -- ^ The style of the pointer.
-    -> FilePath                 -- ^ The filepath.
-    -> Maybe T.Text             -- ^ The header message.
-    -> (Int, Int, Maybe T.Text) -- ^ The line number and column, starting at 1, as well as a label.
-    -> Maybe T.Text             -- ^ The body message.
+    :: Style                       -- ^ The style of the pointer.
+    -> FilePath                    -- ^ The filepath.
+    -> Maybe Header                -- ^ The header message.
+    -> (Line, Column, Maybe Label) -- ^ The line number and column, starting at 1, and a label.
+    -> Maybe Body                  -- ^ The body message.
     -> Block
 blockSimple' style fp hm (l, c, lbl) bm = Block
     { blockStyle = style
@@ -97,12 +105,12 @@ blockSimple' style fp hm (l, c, lbl) bm = Block
 
 -- | A block that points to two parts of the source that are visually connected together.
 blockConnected
-    :: Style                         -- ^ The style of the pointer.
-    -> FilePath                      -- ^ The filepath.
-    -> Maybe T.Text                  -- ^ The header message.
-    -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
-    -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
-    -> Maybe T.Text                  -- ^ The body message.
+    :: Style                               -- ^ The style of the pointer.
+    -> FilePath                            -- ^ The filepath.
+    -> Maybe Header                        -- ^ The header message.
+    -> (Line, Column, Column, Maybe Label) -- ^ The first line number and column span, starting at 1, and a label.
+    -> (Line, Column, Column, Maybe Label) -- ^ The second line number and column span, starting at 1, and a label.
+    -> Maybe Body                          -- ^ The body message.
     -> Block
 blockConnected style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) bm = Block
     { blockStyle = style
@@ -114,12 +122,12 @@ blockConnected style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) bm = Block
 
 -- | A variant of 'blockConnected' where the pointers point at only one column.
 blockConnected'
-    :: Style                    -- ^ The style of the pointer.
-    -> FilePath                 -- ^ The filepath.
-    -> Maybe T.Text             -- ^ The header message.
-    -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
-    -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
-    -> Maybe T.Text             -- ^ The body message.
+    :: Style                       -- ^ The style of the pointer.
+    -> FilePath                    -- ^ The filepath.
+    -> Maybe Header                -- ^ The header message.
+    -> (Line, Column, Maybe Label) -- ^ The first line number and column, starting at 1, and a label.
+    -> (Line, Column, Maybe Label) -- ^ The second line number and column, starting at 1, and a label.
+    -> Maybe Body                  -- ^ The body message.
     -> Block
 blockConnected' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) bm = Block
     { blockStyle = style
@@ -135,13 +143,13 @@ A block that points to two parts of the source that are visually connected toget
 If the two parts of the source happen to be on the same line, the pointers are merged into one.
 -}
 blockMerged
-    :: Style                         -- ^ The style of the pointer.
-    -> FilePath                      -- ^ The filepath.
-    -> Maybe T.Text                  -- ^ The header message.
-    -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
-    -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
-    -> Maybe T.Text                  -- ^ The label for when the two pointers are merged into one.
-    -> Maybe T.Text                  -- ^ The body message.
+    :: Style                               -- ^ The style of the pointer.
+    -> FilePath                            -- ^ The filepath.
+    -> Maybe Header                        -- ^ The header message.
+    -> (Line, Column, Column, Maybe Label) -- ^ The first line number and column span, starting at 1, and a label.
+    -> (Line, Column, Column, Maybe Label) -- ^ The second line number and column span, starting at 1, and a label.
+    -> Maybe Label                         -- ^ The label for when the two pointers are merged into one.
+    -> Maybe Body                          -- ^ The body message.
     -> Block
 blockMerged style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl bm = Block
     { blockStyle = style
@@ -155,13 +163,13 @@ blockMerged style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl bm = Block
 
 -- | A variant of 'blockMerged' where the pointers point at only one column.
 blockMerged'
-    :: Style                    -- ^ The style of the pointer.
-    -> FilePath                 -- ^ The filepath.
-    -> Maybe T.Text             -- ^ The header message.
-    -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
-    -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
-    -> Maybe T.Text             -- ^ The label for when the two pointers are merged into one.
-    -> Maybe T.Text             -- ^ The body message.
+    :: Style                       -- ^ The style of the pointer.
+    -> FilePath                    -- ^ The filepath.
+    -> Maybe Header                -- ^ The header message.
+    -> (Line, Column, Maybe Label) -- ^ The first line number and column, starting at 1, and a label.
+    -> (Line, Column, Maybe Label) -- ^ The second line number and column, starting at 1, and a label.
+    -> Maybe Label                 -- ^ The label for when the two pointers are merged into one.
+    -> Maybe Body                  -- ^ The body message.
     -> Block
 blockMerged' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) lbl bm = Block
     { blockStyle = style
