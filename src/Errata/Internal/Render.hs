@@ -59,6 +59,7 @@ renderBlock slines block@(Block {..}) = blockMessage
     where
         blockMessage = mconcat
             [ TB.fromText $ styleLocation blockStyle blockLocation
+            , TB.fromText $ maybe "" ("\n" <>) blockHeader
             , maybe "" ("\n" <>) (renderSourceLines slines block <$> N.nonEmpty blockPointers)
             , TB.fromText $ maybe "" ("\n" <>) blockBody
             ]

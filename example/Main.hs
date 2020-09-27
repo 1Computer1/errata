@@ -22,8 +22,10 @@ data ParseError = ParseError
 toErrata :: ParseError -> Errata
 toErrata (ParseError fp l c unexpected expected) =
     errataSimple
-        (Just "error: invalid syntax")
-        (blockSimple basicStyle fp l (c, c + T.length unexpected) Nothing
+        (Just "an error occured!")
+        (blockSimple basicStyle fp
+            (Just "error: invalid syntax")
+            (l, c, c + T.length unexpected, Just "this one")
             (Just $ "unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
         Nothing
 
@@ -36,7 +38,7 @@ printErrors source es = TL.putStrLn $ prettyErrors source (toErrata <$> es)
 
 -- An ad-hoc errata.
 adhoc :: [Pointer] -> Errata
-adhoc ps = errataSimple (Just "an error") (Block fancyRedStyle ("here", 1, 1) ps (Just "pbody")) Nothing
+adhoc ps = errataSimple (Just "an error") (Block fancyRedStyle ("here", 1, 1) Nothing ps (Just "pbody")) Nothing
 
 main :: IO ()
 main = do
@@ -117,6 +119,7 @@ main = do
             (Block
                 fancyRedStyle
                 ("file.hs", 3, 10)
+                Nothing
                 [ Pointer 2 10 13 False (Just "\x1b[31mthis has type `Int`\x1b[0m")
                 , Pointer 3 10 17 False (Just "\x1b[31mbut this has type `String`\x1b[0m")
                 ]
@@ -124,6 +127,7 @@ main = do
             [ Block
                 fancyYellowStyle
                 ("file.hs", 1, 7)
+                Nothing
                 [ Pointer 1 7 9 True Nothing
                 , Pointer 2 5 9 True Nothing
                 , Pointer 3 5 9 True (Just "\x1b[33min this `if` expression\x1b[0m")

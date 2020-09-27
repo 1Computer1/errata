@@ -47,6 +47,9 @@ data Block = Block
       -}
     , blockLocation :: (FilePath, Int, Int)
 
+      -- | The header message for the block. This will appear below the location and above the source lines.
+    , blockHeader :: Maybe T.Text
+
       {-|
       The block's pointers. These are used to "point out" parts of the source code in this block.
 
@@ -55,7 +58,7 @@ data Block = Block
       -}
     , blockPointers :: [Pointer]
 
-      -- | The message for the block. This will appear below the source lines.
+      -- | The body message for the block. This will appear below the source lines.
     , blockBody :: Maybe T.Text
     }
 

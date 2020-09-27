@@ -63,66 +63,70 @@ errataSimple header block body = Errata
     , errataBody = body
     }
 
--- | A simple block that points to only one line and optionally has a label or a body message.
+-- | A simple block that points to only one line and optionally has a label, header, or body message.
 blockSimple
-    :: Style        -- ^ The style of the pointer.
-    -> FilePath     -- ^ The filepath.
-    -> Int          -- ^ The line number starting at 1.
-    -> (Int, Int)   -- ^ The column span. These start at 1.
-    -> Maybe T.Text -- ^ The label.
-    -> Maybe T.Text -- ^ The body message.
+    :: Style                         -- ^ The style of the pointer.
+    -> FilePath                      -- ^ The filepath.
+    -> Maybe T.Text                  -- ^ The header message.
+    -> (Int, Int, Int, Maybe T.Text) -- ^ The line number and column span, starting at 1, as well as a label.
+    -> Maybe T.Text                  -- ^ The body message.
     -> Block
-blockSimple style fp l (cs, ce) lbl m = Block
+blockSimple style fp hm (l, cs, ce, lbl) bm = Block
     { blockStyle = style
     , blockLocation = (fp, l, cs)
+    , blockHeader = hm
     , blockPointers = [Pointer l cs ce False lbl]
-    , blockBody = m
+    , blockBody = bm
     }
 
 -- | A variant of 'blockSimple' that only points at one column.
 blockSimple'
-    :: Style        -- ^ The style of the pointer.
-    -> FilePath     -- ^ The filepath.
-    -> Int          -- ^ The line number starting at 1.
-    -> Int          -- ^ The column number starting at 1.
-    -> Maybe T.Text -- ^ The label.
-    -> Maybe T.Text -- ^ The body message.
+    :: Style                    -- ^ The style of the pointer.
+    -> FilePath                 -- ^ The filepath.
+    -> Maybe T.Text             -- ^ The header message.
+    -> (Int, Int, Maybe T.Text) -- ^ The line number and column, starting at 1, as well as a label.
+    -> Maybe T.Text             -- ^ The body message.
     -> Block
-blockSimple' style fp l c lbl m = Block
+blockSimple' style fp hm (l, c, lbl) bm = Block
     { blockStyle = style
     , blockLocation = (fp, l, c)
+    , blockHeader = hm
     , blockPointers = [Pointer l c (c + 1) False lbl]
-    , blockBody = m
+    , blockBody = bm
     }
 
 -- | A block that points to two parts of the source that are visually connected together.
 blockConnected
     :: Style                         -- ^ The style of the pointer.
     -> FilePath                      -- ^ The filepath.
+    -> Maybe T.Text                  -- ^ The header message.
     -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
     -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
     -> Maybe T.Text                  -- ^ The body message.
     -> Block
-blockConnected style fp (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) m = Block
+blockConnected style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) bm = Block
     { blockStyle = style
     , blockLocation = (fp, l1, cs1)
+    , blockHeader = hm
     , blockPointers = [Pointer l1 cs1 ce1 True lbl1, Pointer l2 cs2 ce2 True lbl2]
-    , blockBody = m
+    , blockBody = bm
     }
 
 -- | A variant of 'blockConnected' where the pointers point at only one column.
 blockConnected'
     :: Style                    -- ^ The style of the pointer.
     -> FilePath                 -- ^ The filepath.
+    -> Maybe T.Text             -- ^ The header message.
     -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
     -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
     -> Maybe T.Text             -- ^ The body message.
     -> Block
-blockConnected' style fp (l1, c1, lbl1) (l2, c2, lbl2) m = Block
+blockConnected' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) bm = Block
     { blockStyle = style
     , blockLocation = (fp, l1, c1)
+    , blockHeader = hm
     , blockPointers = [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
-    , blockBody = m
+    , blockBody = bm
     }
 
 {-|
@@ -133,36 +137,40 @@ If the two parts of the source happen to be on the same line, the pointers are m
 blockMerged
     :: Style                         -- ^ The style of the pointer.
     -> FilePath                      -- ^ The filepath.
+    -> Maybe T.Text                  -- ^ The header message.
     -> (Int, Int, Int, Maybe T.Text) -- ^ The first line number and column span, starting at 1, as well as a label.
     -> (Int, Int, Int, Maybe T.Text) -- ^ The second line number and column span, starting at 1, as well as a label.
     -> Maybe T.Text                  -- ^ The label for when the two pointers are merged into one.
     -> Maybe T.Text                  -- ^ The body message.
     -> Block
-blockMerged style fp (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl m = Block
+blockMerged style fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl bm = Block
     { blockStyle = style
     , blockLocation = (fp, l1, cs1)
+    , blockHeader = hm
     , blockPointers = if l1 == l2
         then [Pointer l1 cs1 ce2 False lbl]
         else [Pointer l1 cs1 ce1 True lbl1, Pointer l2 cs2 ce2 True lbl2]
-    , blockBody = m
+    , blockBody = bm
     }
 
 -- | A variant of 'blockMerged' where the pointers point at only one column.
 blockMerged'
     :: Style                    -- ^ The style of the pointer.
     -> FilePath                 -- ^ The filepath.
+    -> Maybe T.Text             -- ^ The header message.
     -> (Int, Int, Maybe T.Text) -- ^ The first line number and column, starting at 1, as well as a label.
     -> (Int, Int, Maybe T.Text) -- ^ The second line number and column, starting at 1, as well as a label.
     -> Maybe T.Text             -- ^ The label for when the two pointers are merged into one.
     -> Maybe T.Text             -- ^ The body message.
     -> Block
-blockMerged' style fp (l1, c1, lbl1) (l2, c2, lbl2) lbl m = Block
+blockMerged' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) lbl bm = Block
     { blockStyle = style
     , blockLocation = (fp, l1, c1)
+    , blockHeader = hm
     , blockPointers = if l1 == l2
         then [Pointer l1 c1 (c2 + 1) False lbl]
         else [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
-    , blockBody = m
+    , blockBody = bm
     }
 
 {-|
@@ -172,6 +180,7 @@ Errors should look like so:
 
 > error header message
 > --> file.ext:1:16
+> block header message
 >   |
 > 1 |   line 1 foo bar do
 >   |  ________________^^ start label
@@ -209,6 +218,7 @@ Errors should look like so:
 
 > error header message
 > → file.ext:1:16
+> block header message
 >   │
 > 1 │   line 1 foo bar do
 >   │ ┌────────────────^^ start label
@@ -301,8 +311,10 @@ Then we can create a simple pretty printer like so:
 > toErrata :: ParseError -> Errata
 > toErrata (ParseError fp l c unexpected expected) =
 >     errataSimple
->         (Just "error: invalid syntax")
->         (blockSimple basicStyle fp l (c, c + T.length unexpected) Nothing
+>         (Just "an error occured!")
+>         (blockSimple basicStyle fp
+>             (Just "error: invalid syntax")
+>             (l, c, c + T.length unexpected, Just "this one")
 >             (Just $ "unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
 >         Nothing
 >
@@ -313,11 +325,12 @@ Note that in the above example, we have @OverloadedStrings@ enabled to reduce us
 
 An example error message from this might be:
 
-> error: invalid syntax
+> an error occured!
 > --> ./comma.json:2:18
+> error: invalid syntax
 >   |
 > 2 |     "bad": [1, 2,]
->   |                  ^
+>   |                  ^ this one
 > unexpected ]
 > expected null, true, false, ", -, digit, [, {
 -}
