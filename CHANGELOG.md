@@ -10,6 +10,8 @@
 
 * Defined type synonyms for line, column, headers, bodies, and labels, for the purpose of documentation. It should be much easier to know what is expected by just reading the types now.
 
+* Use `GHC.Arr.Array` for keeping source lines, which should be faster for indexing and should not force the individual lines until they are needed.
+
 ## 0.1.0.0
 
 * Initial release.

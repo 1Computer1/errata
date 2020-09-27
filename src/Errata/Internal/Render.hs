@@ -21,12 +21,11 @@ module Errata.Internal.Render
     , renderSourceLines
     ) where
 
+import qualified GHC.Arr as A
 import           Data.List
 import qualified Data.List.NonEmpty as N
-import qualified Data.Sequence as S
 import qualified Data.Map.Strict as M
 import           Data.Maybe
-import           Data.String (IsString)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
 import           Errata.Source
@@ -36,15 +35,12 @@ import           Errata.Types
 renderErrors :: Source source => source -> [Errata] -> TB.Builder
 renderErrors source errs = unsplit "\n\n" prettified
     where
-        sortedErrata = sortOn (\(Errata {..}) -> blockLocation errataBlock) $ errs
-
-        -- We may arbitrarily index the source lines a lot, so a Seq is appropriate.
-        -- If push comes to shove, this could be replaced with an 'Array' or a 'Vec'.
-        slines = S.fromList (sourceToLines source)
+        sortedErrata = sortOn (blockLocation . errataBlock) errs
+        slines = let xs = sourceToLines source in A.listArray (0, length xs - 1) xs
         prettified = map (renderErrata slines) sortedErrata
 
 -- | A single pretty error from metadata and source lines.
-renderErrata :: Source source => S.Seq source -> Errata -> TB.Builder
+renderErrata :: Source source => A.Array Int source -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
         errorMessage = mconcat
@@ -54,7 +50,7 @@ renderErrata slines (Errata {..}) = errorMessage
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Source source => S.Seq source -> Block -> TB.Builder
+renderBlock :: Source source => A.Array Int source -> Block -> TB.Builder
 renderBlock slines block@(Block {..}) = blockMessage
     where
         blockMessage = mconcat
@@ -67,7 +63,7 @@ renderBlock slines block@(Block {..}) = blockMessage
 -- | The source lines for a block.
 renderSourceLines
     :: Source source
-    => S.Seq source
+    => A.Array Int source
     -> Block
     -> N.NonEmpty Pointer
     -> TB.Builder
@@ -83,7 +79,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
         showLine :: [(Column, Column)] -> Line -> TB.Builder
-        showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . sourceToText) $ S.lookup (n - 1) slines
+        showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . sourceToText) $ indexLines slines (n - 1)
 
         -- Generic prefix without line number.
         prefix = mconcat
@@ -310,10 +306,19 @@ parar _ b []     = b
 parar f b (a:as) = f a (as, parar f b as)
 
 -- | Puts text between each item.
-unsplit :: (Semigroup a, IsString a) => a -> [a] -> a
+unsplit :: TB.Builder -> [TB.Builder] -> TB.Builder
 unsplit _ [] = ""
 unsplit a (x:xs) = foldl' (\acc y -> acc <> a <> y) x xs
+{-# INLINE unsplit #-}
 
 -- | Replicates text into a builder.
 replicateB :: Int -> T.Text -> TB.Builder
-replicateB n = TB.fromText . T.replicate n
+replicateB n xs = TB.fromText (T.replicate n xs)
+{-# INLINE replicateB #-}
+
+-- | Index safely into an array.
+indexLines :: A.Array Int s -> Int -> Maybe s
+indexLines slines i = if A.inRange (A.bounds slines) i
+    then Just (A.unsafeAt slines i)
+    else Nothing
+{-# INLINE indexLines #-}
