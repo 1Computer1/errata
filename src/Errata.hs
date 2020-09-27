@@ -311,23 +311,25 @@ Suppose we had an error of this type:
 
 Then we can create a simple pretty printer like so:
 
-> import qualified Data.List.NonEmpty as N
-> import qualified Data.Text as T
-> import qualified Data.Text.Lazy.IO as TL
-> import           Errata
->
-> toErrata :: ParseError -> Errata
-> toErrata (ParseError fp l c unexpected expected) =
->     errataSimple
->         (Just "an error occured!")
->         (blockSimple basicStyle fp
->             (Just "error: invalid syntax")
->             (l, c, c + T.length unexpected, Just "this one")
->             (Just $ "unexpected " <> unexpected <> "\nexpected " <> T.intercalate ", " expected))
->         Nothing
->
-> printErrors :: T.Text -> [ParseError] -> IO ()
-> printErrors source es = TL.putStrLn $ prettyErrors source (toErrata <$> es)
+@
+import qualified Data.List.NonEmpty as N
+import qualified Data.Text as T
+import qualified Data.Text.Lazy.IO as TL
+import           "Errata"
+
+toErrata :: ParseError -> 'Errata'
+toErrata (ParseError fp l c unexpected expected) =
+    'errataSimple'
+        (Just \"an error occured!\")
+        ('blockSimple' 'basicStyle' fp
+            (Just \"error: invalid syntax\")
+            (l, c, c + T.length unexpected, Just \"this one\")
+            (Just $ \"unexpected \" \<> unexpected \<> \"\\nexpected \" \<> T.intercalate \", \" expected))
+        Nothing
+
+printErrors :: T.Text -> [ParseError] -> IO ()
+printErrors source es = TL.putStrLn $ 'prettyErrors' source (toErrata \<$> es)
+@
 
 Note that in the above example, we have @OverloadedStrings@ enabled to reduce uses of 'Data.Text.pack'.
 
