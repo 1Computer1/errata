@@ -1,6 +1,7 @@
-{-# LANGUAGE MultiWayIf        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE MultiWayIf          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-|
 Module      : Errata.Internal.Render
@@ -23,8 +24,8 @@ module Errata.Internal.Render
 
 import           Data.List
 import qualified Data.List.NonEmpty as N
+import qualified Data.IntMap as I
 import qualified Data.Map.Strict as M
-import qualified Data.IntMap.Lazy as I
 import           Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
@@ -36,21 +37,26 @@ renderErrors :: Source source => source -> [Errata] -> TB.Builder
 renderErrors source errs = unsplit "\n\n" prettified
     where
         sortedErrata = sortOn (blockLocation . errataBlock) errs
-        slines = let xs = sourceToLines source in I.fromList (zip [0..length xs - 1] xs)
+        slines = sourceToLines source
         prettified = map (renderErrata slines) sortedErrata
 
 -- | A single pretty error from metadata and source lines.
-renderErrata :: Source source => I.IntMap source -> Errata -> TB.Builder
+renderErrata :: Source source => [source] -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
+        chunks [] = []
+        chunks xs = xs : chunks (tail xs)
+
+        srcTable = I.fromDistinctAscList (zip [0..] (chunks slines))
+
         errorMessage = mconcat
             [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" (map (renderBlock slines) (errataBlock : errataBlocks))
+            , unsplit "\n\n" (map (renderBlock srcTable) (errataBlock : errataBlocks))
             , TB.fromText $ maybe "" ("\n\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Source source => I.IntMap source -> Block -> TB.Builder
+renderBlock :: Source source => I.IntMap [source] -> Block -> TB.Builder
 renderBlock slines block@(Block {..}) = blockMessage
     where
         blockMessage = mconcat
@@ -62,8 +68,8 @@ renderBlock slines block@(Block {..}) = blockMessage
 
 -- | The source lines for a block.
 renderSourceLines
-    :: Source source
-    => I.IntMap source
+    :: forall source. Source source
+    => I.IntMap [source]
     -> Block
     -> N.NonEmpty Pointer
     -> TB.Builder
@@ -78,8 +84,8 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
-        showLine :: [(Column, Column)] -> Line -> TB.Builder
-        showLine hs n = TB.fromText . maybe "" id . fmap (styleLine hs . sourceToText) $ I.lookup (n - 1) slines
+        showLine :: [(Column, Column)] -> source -> TB.Builder
+        showLine hs = TB.fromText . styleLine hs . sourceToText
 
         -- Generic prefix without line number.
         prefix = mconcat
@@ -104,7 +110,10 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
         -- The resulting source lines.
         -- Extra prefix for padding.
         sourceLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
-            : makeSourceLines 0 [minLine .. maxLine]
+            : makeSourceLines 0 
+                (zip [minLine..]
+                  . take (maxLine - (minLine - 1)) 
+                  $ slines I.! (minLine - 1))
 
         -- Whether there will be a multiline span.
         hasConnMulti = M.size (M.filter (any pointerConnect) pointersGrouped) > 1
@@ -121,27 +130,27 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- Makes the source lines.
         -- We have an @extra@ parameter to keep track of extra lines when spanning multiple lines.
-        makeSourceLines :: Line -> [Line] -> [TB.Builder]
+        makeSourceLines :: Line -> [(Line, source)] -> [TB.Builder]
 
         -- No lines left.
         makeSourceLines _ [] = []
 
         -- The next line is a line we have to decorate with pointers.
-        makeSourceLines _ (n:ns)
-            | Just p <- M.lookup n pointersGrouped = makeDecoratedLines p <> makeSourceLines 0 ns
+        makeSourceLines _ (pr@(n,_):ns)
+            | Just p <- M.lookup n pointersGrouped = makeDecoratedLines p pr <> makeSourceLines 0 ns
 
         -- The next line is an extra line, within a limit (currently 2, may be configurable later).
-        makeSourceLines extra (n:ns)
+        makeSourceLines extra ((n,l):ns)
             | extra < 2 =
                 let mid = if
                         | snd (connAround n) -> TB.fromText styleVertical <> " "
                         | hasConnMulti       -> "  "
                         | otherwise          -> ""
-                in (linePrefix n <> mid <> showLine [] n) : makeSourceLines (extra + 1) ns
+                in (linePrefix n <> mid <> showLine [] l) : makeSourceLines (extra + 1) ns
 
         -- We reached the extra line limit, so now there's some logic to figure out what's next.
         makeSourceLines _ ns =
-            let (es, ns') = break (`M.member` pointersGrouped) ns
+            let (es, ns') = break ((`M.member` pointersGrouped) . fst) ns
             in case (es, ns') of
                 -- There were no lines left to decorate anyways.
                 (_, []) -> []
@@ -151,27 +160,28 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
                 -- There is a single extra line, so we can use that as the before-line.
                 -- No need for omission, because it came right before.
-                ([n], _) ->
+                ([(n,l)], _) ->
                     let mid = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
                             | otherwise          -> ""
-                    in (linePrefix n <> mid <> showLine [] n) : makeSourceLines 0 ns'
+                    in (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
 
                 -- There are more than one line in between, so we omit all but the last.
                 -- We use the last one as the before-line.
                 (_, _) ->
-                    let n = last es
+                    let (n,l) = last es
                         mid = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
                             | otherwise          -> ""
-                    in (omitPrefix <> mid) : (linePrefix n <> mid <> showLine [] n) : makeSourceLines 0 ns'
+                    in (omitPrefix <> mid) : (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
 
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
-        makeDecoratedLines :: N.NonEmpty Pointer -> [TB.Builder]
-        makeDecoratedLines pointers = (linePrefix line <> TB.fromText lineConnector <> sline) : decorationLines
+        makeDecoratedLines :: N.NonEmpty Pointer -> (Line, source) -> [TB.Builder]
+        makeDecoratedLines pointers (num,line) = 
+            (linePrefix num <> TB.fromText lineConnector <> sline) : decorationLines
             where
                 lineConnector = if
                     | hasConnBefore && hasConnUnder -> styleVertical <> " "
@@ -179,8 +189,8 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
                     | otherwise                     -> ""
 
                 -- Shortcuts to where this line connects to.
-                hasConnHere = hasConn line
-                (hasConnBefore, hasConnAfter) = connAround line
+                hasConnHere = hasConn num
+                (hasConnBefore, hasConnAfter) = connAround num
                 hasConnAround = hasConnBefore || hasConnAfter
                 hasConnOver = hasConnHere || hasConnBefore
                 hasConnUnder = hasConnHere || hasConnAfter
@@ -190,8 +200,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
                 pointersSorted = N.fromList . sortOn pointerColumns $ N.toList pointers
                 pointersSorted' = N.reverse pointersSorted
 
-                -- The line we're on.
-                line = pointerLine $ N.head pointers
+                -- The line number we're on.
                 sline = showLine (map pointerColumns (N.toList pointersSorted)) line
 
                 -- The resulting decoration lines.
