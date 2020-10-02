@@ -1,0 +1,6 @@
+an error
+--> here:1:1
+  |
+1 | abcdefghijk
+  |               ^ empty
+an error occurred here

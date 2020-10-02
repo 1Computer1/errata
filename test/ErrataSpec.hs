@@ -135,6 +135,38 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T008"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [
+            ]
+        ]
+
+    golden
+        "T009"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 4 1 2 False (Just "empty")
+            ]
+        ]
+
+    golden
+        "T010"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 1 False (Just "empty")
+            ]
+        ]
+
+    golden
+        "T011"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 15 16 False (Just "empty")
+            ]
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
