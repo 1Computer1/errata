@@ -1,0 +1,12 @@
+an error
+--> here:1:1
+  |
+1 |   abcdefghijk
+  |  __^^__^^  ^^ z
+  | |  | 
+  | |  | x
+2 | | lmnopqrstuv
+  | |     ^^^ w
+3 | | wxyzfoobar
+  | |_^^ v
+an error occurred here

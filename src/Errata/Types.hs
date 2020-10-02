@@ -97,6 +97,7 @@ data Pointer = Pointer
     , pointerConnect  :: Bool        -- ^ Whether this pointer connects with other pointers.
     , pointerLabel    :: Maybe Label -- ^ An optional label for the pointer.
     }
+    deriving (Show, Eq)
 
 -- | Gets the column span for a 'Pointer'.
 pointerColumns :: Pointer -> (Line, Column)
