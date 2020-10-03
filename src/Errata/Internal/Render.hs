@@ -48,8 +48,8 @@ renderErrata slines (Errata {..}) = errorMessage
         blocks = errataBlock : errataBlocks
 
         -- The pointers grouped by line.
-        blockPointersGrouped = I.fromListWith (<>) 
-          . map (\p -> (pointerLine p, pure p)) 
+        blockPointersGrouped = I.fromListWith (<>)
+          . map (\p -> (pointerLine p, pure p))
           . blockPointers <$> blocks
 
         -- Min and max line numbers as defined by the pointers of each block.
@@ -67,56 +67,56 @@ renderErrata slines (Errata {..}) = errorMessage
         slices [] = repeat (repeat mempty)
         slices xs = (xs <> repeat mempty) : slices (tail xs)
 
-        {- 
+        {-
           Optimization: we use a Patricia tree (IntMap) indexed by start line
           into respective tail slices of the list of source lines @slines@.
-          
-          If we were to use the list @slines@ as-is: 
+
+          If we were to use the list @slines@ as-is:
             O(n) seeking per source block, O(n) traversal
-          Since, we would be linearly traversing to the start of each source block every 
+          Since, we would be linearly traversing to the start of each source block every
           time with no caching for future source blocks at (or close to) the same starting
           line as previous source blocks.
 
           If we were to use an IntMap of source lines by itself:
             Seeking becomes free, at the expense of O(n log n) traversal per source block
           Since, we are performing an O(log n) average case Patricia lookup per line.
-          
-          Whereas if we use a hybrid IntMap + association list approach: 
+
+          Whereas if we use a hybrid IntMap + association list approach:
             O(n + log n) worst case, O(log n) average case, seeking per source block,
-              O(n) traversal 
+              O(n) traversal
           Worse case is unevaluated slices, as this would force @slices@ evaluation, which is
-          an O(n) list traversal, on top of an O(log n) Patricia lookup. Partially-evaluated leafs will 
+          an O(n) list traversal, on top of an O(log n) Patricia lookup. Partially-evaluated leafs will
           have slightly better asymptotics, and fully-evaluated leafs will be O(log n) average case,
           which is just the cost of a Patricia lookup.
-          
+
           For sufficiently large block counts with scattered pointers per block, which we assume
-          holds for real-world use cases, the traversal savings on repeat lookups will quickly favor 
+          holds for real-world use cases, the traversal savings on repeat lookups will quickly favor
           hybrid association list + IntMap asymptotics.
         -}
-        srcTable = I.fromDistinctAscList 
+        srcTable = I.fromDistinctAscList
           (zip [minLine..maxLine] (drop (minLine - 1) (slices slines)))
 
         errorMessage = mconcat
             [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" $ getZipList $ 
-                renderBlock srcTable 
-                  <$> ZipList blocks 
+            , unsplit "\n\n" $ getZipList $
+                renderBlock srcTable
+                  <$> ZipList blocks
                   <*> ZipList blockPointersGrouped
                   <*> ZipList (zip minPointers maxPointers)
             , TB.fromText $ maybe "" ("\n\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock 
-  :: Source source 
-  => I.IntMap [source] 
-  -> Block 
-  -> I.IntMap [Pointer] 
-  -> (Line, Line) 
+renderBlock
+  :: Source source
+  => I.IntMap [source]
+  -> Block
+  -> I.IntMap [Pointer]
+  -> (Line, Line)
   -> TB.Builder
 renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, maxBlockLine) = blockMessage
     where
-        slines = zip [minBlockLine..maxBlockLine] 
+        slines = zip [minBlockLine..maxBlockLine]
           (maybe [] id $ I.lookup minBlockLine srcTable)
 
         -- Padding size before the line prefix.
@@ -234,7 +234,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
         makeDecoratedLines :: [Pointer] -> (Line, source) -> [TB.Builder]
-        makeDecoratedLines pointers (num, line) = 
+        makeDecoratedLines pointers (num, line) =
             (linePrefix num <> TB.fromText lineConnector <> sline) : decorationLines
             where
                 lineConnector = if
@@ -280,8 +280,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 underline ps =
                     let (decor, _) = foldDecorations
                             (\n isFirst rest -> if
-                                | isFirst && any pointerConnect rest && hasConnAround -> 
-                                    replicateB n styleHorizontal
+                                | isFirst && any pointerConnect rest && hasConnAround -> replicateB n styleHorizontal
                                 | isFirst -> replicateB n " "
                                 | any pointerConnect rest -> replicateB n styleHorizontal
                                 | otherwise -> replicateB n " "
@@ -296,7 +295,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                             | hasConnHere && hasConnAfter                  -> styleDownRight <> styleHorizontal
                             | hasConnBefore && hasConnAfter                -> styleVertical <> " "
                             | hasConnMulti                                 -> "  "
-                            | otherwise -> ""
+                            | otherwise                                    -> ""
                     in prefix <> TB.fromText mid <> decor <> TB.fromText lbl
 
                 -- Create connectors underneath.
