@@ -5,9 +5,9 @@ module ErrataSpec (spec) where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
-import Errata
-import Test.Hspec
-import Test.Hspec.Golden
+import           Errata
+import           Test.Hspec
+import           Test.Hspec.Golden
 
 spec :: Spec
 spec = do
