@@ -2,5 +2,7 @@ cradle:
   cabal:
     - path: "./src"
       component: "lib:errata"
+    - path: "./test"
+      component: "test:errata-test"
     - path: "./example"
       component: "executable:errata-example"

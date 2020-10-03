@@ -95,13 +95,8 @@ blockSimple'
     -> (Line, Column, Maybe Label) -- ^ The line number and column, starting at 1, and a label.
     -> Maybe Body                  -- ^ The body message.
     -> Block
-blockSimple' style fp hm (l, c, lbl) bm = Block
-    { blockStyle = style
-    , blockLocation = (fp, l, c)
-    , blockHeader = hm
-    , blockPointers = [Pointer l c (c + 1) False lbl]
-    , blockBody = bm
-    }
+blockSimple' style fp hm (l, c, lbl) bm =
+    blockSimple style fp hm (l, c, c + 1, lbl) bm
 
 -- | A block that points to two parts of the source that are visually connected together.
 blockConnected
@@ -129,13 +124,8 @@ blockConnected'
     -> (Line, Column, Maybe Label) -- ^ The second line number and column, starting at 1, and a label.
     -> Maybe Body                  -- ^ The body message.
     -> Block
-blockConnected' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) bm = Block
-    { blockStyle = style
-    , blockLocation = (fp, l1, c1)
-    , blockHeader = hm
-    , blockPointers = [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
-    , blockBody = bm
-    }
+blockConnected' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) bm =
+    blockConnected style fp hm (l1, c1, c1 + 1, lbl1) (l2, c2, c2 + 1, lbl2) bm
 
 {-|
 A block that points to two parts of the source that are visually connected together.
@@ -171,15 +161,8 @@ blockMerged'
     -> Maybe Label                 -- ^ The label for when the two pointers are merged into one.
     -> Maybe Body                  -- ^ The body message.
     -> Block
-blockMerged' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) lbl bm = Block
-    { blockStyle = style
-    , blockLocation = (fp, l1, c1)
-    , blockHeader = hm
-    , blockPointers = if l1 == l2
-        then [Pointer l1 c1 (c2 + 1) False lbl]
-        else [Pointer l1 c1 (c1 + 1) True lbl1, Pointer l2 c2 (c2 + 1) True lbl2]
-    , blockBody = bm
-    }
+blockMerged' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) lbl bm =
+    blockMerged style fp hm (l1, c1, c1 + 1, lbl1) (l2, c2, c2 + 1, lbl2) lbl bm
 
 {-|
 A basic style using only ASCII characters.

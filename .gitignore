@@ -21,10 +21,9 @@ cabal.config
 cabal.project.local
 .ghc.environment.*
 .HTF/
-
-# Stack
 .stack-work/
 stack.yaml.lock
+test/.golden/**/actual
 
 # Vim
 [._]*.s[a-v][a-z]

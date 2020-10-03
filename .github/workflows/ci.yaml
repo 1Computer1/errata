@@ -15,6 +15,8 @@ jobs:
       matrix:
         cabal: ["3.2"]
         ghc: ["8.6.5", "8.8.3", "8.10.1"]
+    env:
+      CONFIG: "--enable-tests"
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-haskell@v1.1.2
@@ -23,7 +25,7 @@ jobs:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
       - run: cabal update
-      - run: cabal freeze
+      - run: cabal freeze $CONFIG
       - uses: actions/cache@v2
         with:
           path: |
@@ -32,5 +34,7 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.ghc }}-
-      - run: cabal build
+      - run: cabal build $CONFIG
+      - run: cabal test $CONFIG
+      - run: cabal haddock $CONFIG
       - run: cabal check
