@@ -14,9 +14,9 @@ this module is to allow you to customize your error messages.
 To get started, see the documentation for 'prettyErrors'. When using this module, we recommend you turn on the
 @OverloadedStrings@ extension and import "Data.Text" at the very least due to the use of 'Data.Text.Text' (strict).
 
-The overall workflow to use the printer is to convert your error type to 'Errata', which entails converting your errors
-to 'Errata' by filling in messages and 'Block's. You can create 'Errata' and 'Block' from their constructors, or use
-the convenience functions for common usecases, like 'errataSimple' and 'blockSimple'.
+The overall workflow to use the printer is to convert your error type to 'Errata', which entails filling in messages
+and 'Block's. You can create 'Errata' and 'Block' from their constructors, or use the convenience functions for
+common usecases, like 'errataSimple' and 'blockSimple'.
 
 For easier reading, we define:
 
@@ -292,7 +292,6 @@ Suppose we had an error of this type:
 Then we can create a simple pretty printer like so:
 
 @
-import qualified Data.List.NonEmpty as N
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.IO as TL
 import           "Errata"
@@ -308,7 +307,7 @@ toErrata (ParseError fp l c unexpected expected) =
         Nothing
 
 printErrors :: T.Text -> [ParseError] -> IO ()
-printErrors source es = TL.putStrLn $ 'prettyErrors' source (toErrata \<$> es)
+printErrors source es = TL.putStrLn $ 'prettyErrors' source (map toErrata es)
 @
 
 Note that in the above example, we have @OverloadedStrings@ enabled to reduce uses of 'Data.Text.pack'.
