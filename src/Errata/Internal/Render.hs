@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
 {-|
 Module      : Errata.Internal.Render
@@ -25,7 +26,6 @@ module Errata.Internal.Render
 import           Control.Arrow
 import           Control.Applicative
 import           Data.List
-import qualified Data.List.NonEmpty as N
 import qualified Data.IntMap as I
 import           Data.Maybe
 import qualified Data.Text as T
@@ -48,22 +48,20 @@ renderErrata slines (Errata {..}) = errorMessage
         -- | Header block + body blocks
         blocks = errataBlock : errataBlocks
 
-        -- blockPointers = N.nonEmpty $ blockPointers <$> blocks
-
         -- The pointers grouped by line.
         blockPointersGrouped = I.fromListWith (<>) . map (pointerLine &&& pure) . blockPointers <$> blocks
 
         -- Min and max line numbers as defined by the pointers of each block.
-        minPointers = fmap fst . I.lookupMin <$> blockPointersGrouped
-        maxPointers = fmap fst . I.lookupMax <$> blockPointersGrouped
+        minPointers = maybe 1 id . fmap fst . I.lookupMin <$> blockPointersGrouped
+        maxPointers = maybe 0 id . fmap fst . I.lookupMax <$> blockPointersGrouped
 
-        minLine = catMaybes (minimum minPointers)
-        minLine = catMaybes (maxium maxPointers)
+        minLine = minimum minPointers
+        maxLine = maximum maxPointers
 
         -- Turns a list into a list of tail slices of the original list,
         -- each element at index @i@ dropping the first @i@ elements of the original list.
-        slices [] = []
-        slices xs = xs : slices (tail xs)
+        slices [] = repeat (repeat mempty)
+        slices xs = (xs <> repeat mempty) : slices (tail xs)
 
         {- 
           Optimization: we use a Patricia tree (IntMap) indexed by start line
@@ -96,19 +94,26 @@ renderErrata slines (Errata {..}) = errorMessage
 
         errorMessage = mconcat
             [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" $ fmap (maybe mempty id) $
-                flip (zipWith (<$>)) (zipWith (liftA2 (,)) minPointers maxPointers) $
-                  getZipList $ renderBlock srcTable 
-                    <$> ZipList blocks 
-                    <*> ZipList blockPointersGrouped
+            , unsplit "\n\n" $ getZipList $ 
+                renderBlock srcTable 
+                  <$> ZipList blocks 
+                  <*> ZipList blockPointersGrouped
+                  <*> ZipList (zip minPointers maxPointers)
             , TB.fromText $ maybe "" ("\n\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Source source => I.IntMap [source] -> Block -> I.IntMap [Pointer] -> (Line, Line) -> TB.Builder
+renderBlock 
+  :: Source source 
+  => I.IntMap [source] 
+  -> Block 
+  -> I.IntMap [Pointer] 
+  -> (Line, Line) 
+  -> TB.Builder
 renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, maxBlockLine) = blockMessage
     where
-        slines = zip [minBlockLine..maxBlockLine] (maybe [] id $ I.lookup minBlockLine srcTable)
+        slines = zip [minBlockLine..maxBlockLine] 
+          (maybe [] id $ I.lookup minBlockLine srcTable)
 
         -- Padding size before the line prefix.
         padding = length (show maxBlockLine)
@@ -116,7 +121,7 @@ renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, max
         blockMessage = mconcat
             [ TB.fromText $ styleLocation blockStyle blockLocation
             , TB.fromText $ maybe "" ("\n" <>) blockHeader
-            , maybe "" ("\n" <>) (renderSourceLines slines block padding <$> sequenceA (N.nonEmpty <$> blockPointersGrouped))
+            , maybe "" ("\n" <>) $ renderSourceLines slines block padding blockPointersGrouped
             , TB.fromText $ maybe "" ("\n" <>) blockBody
             ]
 
@@ -126,9 +131,10 @@ renderSourceLines
     => [(Line, source)]
     -> Block
     -> Int
-    -> I.IntMap (N.NonEmpty Pointer)
-    -> TB.Builder
-renderSourceLines slines (Block {..}) padding pointersGrouped = unsplit "\n" sourceLines
+    -> I.IntMap [Pointer]
+    -> Maybe (TB.Builder)
+renderSourceLines _ _ _ (I.null -> True) = Nothing
+renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "\n" sourceLines
     where
         Style {..} = blockStyle
 
@@ -223,7 +229,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = unsplit "\n" sou
 
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
-        makeDecoratedLines :: N.NonEmpty Pointer -> (Line, source) -> [TB.Builder]
+        makeDecoratedLines :: [Pointer] -> (Line, source) -> [TB.Builder]
         makeDecoratedLines pointers (num,line) = 
             (linePrefix num <> TB.fromText lineConnector <> sline) : decorationLines
             where
@@ -241,32 +247,32 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = unsplit "\n" sou
 
                 -- The sorted pointers by column.
                 -- There's a reverse for when we create decorations.
-                pointersSorted = N.fromList . sortOn pointerColumns $ N.toList pointers
-                pointersSorted' = N.reverse pointersSorted
+                pointersSorted = sortOn pointerColumns pointers
+                pointersSorted' = reverse pointersSorted
 
                 -- The line number we're on.
-                sline = showLine (map pointerColumns (N.toList pointersSorted)) line
+                sline = showLine (map pointerColumns pointersSorted) line
 
                 -- The resulting decoration lines.
                 decorationLines = if
                     -- There's only one pointer, so no need for more than just an underline and label.
-                    | N.length pointersSorted' == 1                           -> [underline pointersSorted']
+                    | length pointersSorted' == 1                             -> [underline pointersSorted']
 
                     -- There's no labels at all, so we just need the underline.
-                    | all (isNothing . pointerLabel) (N.tail pointersSorted') -> [underline pointersSorted']
+                    | all (isNothing . pointerLabel) (tail pointersSorted') -> [underline pointersSorted']
 
                     -- Otherwise, we have three steps to do:
                     --   The underline directly underneath.
                     --   An extra connector for the labels other than the rightmost one.
                     --   The remaining connectors and the labels.
                     | otherwise ->
-                        let hasLabels = filter (isJust . pointerLabel) $ N.tail pointersSorted'
+                        let hasLabels = filter (isJust . pointerLabel) $ tail pointersSorted'
                         in underline pointersSorted'
                             : connectors hasLabels
                             : parar (\a (rest, xs) -> connectorAndLabel rest a : xs) [] hasLabels
 
                 -- Create an underline directly under the source.
-                underline :: N.NonEmpty Pointer -> TB.Builder
+                underline :: [Pointer] -> TB.Builder
                 underline ps =
                     let (decor, _) = foldDecorations
                             (\n isFirst rest -> if
@@ -277,8 +283,8 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = unsplit "\n" sou
                             )
                             ""
                             (\n -> replicateB n styleUnderline)
-                            (N.toList ps)
-                        lbl = maybe "" (" " <>) . pointerLabel $ N.head ps
+                            ps
+                        lbl = maybe "" (" " <>) . pointerLabel $ head ps
                         mid = if
                             | hasConnHere && hasConnBefore && hasConnAfter -> styleUpDownRight <> styleHorizontal
                             | hasConnHere && hasConnBefore                 -> styleUpRight <> styleHorizontal

@@ -21,7 +21,7 @@ A class for manipulating and converting source text.
 
 For @ByteString@ source types, you should convert it to one of the built-in instances with your encoding of choice.
 -}
-class Source s where
+class Monoid s => Source s where
     -- | Splits the source into lines.
     sourceToLines :: s -> [s]
 
