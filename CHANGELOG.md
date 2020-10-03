@@ -2,6 +2,12 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
+## Unreleased
+
+* Optimized rendering of errors (#5). Huge thanks to [RiugaBachi](https://github.com/RiugaBachi) for this!
+
+* Reworked the pretty printer so that it no longer prints trailing whitespace in most places.
+
 ## 0.2.0.0
 
 * Added new `blockHeader` field to `Block`, which will put text underneath the location text but above the source lines. This also affects all the block helper functions, which now have an argument for the header.
