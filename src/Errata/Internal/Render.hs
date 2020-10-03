@@ -37,21 +37,17 @@ import           Errata.Types
 renderErrors :: Source source => source -> [Errata] -> TB.Builder
 renderErrors source errs = unsplit "\n\n" prettified
     where
-        sortedErrata = sortOn (blockLocation . errataBlock) errs
         slines = sourceToLines source
-        prettified = map (renderErrata slines) sortedErrata
+        prettified = map (renderErrata slines) errs
 
 -- | A single pretty error from metadata and source lines.
 renderErrata :: Source source => [source] -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
-        -- Header block + body blocks
-        blocks = errataBlock : errataBlocks
-
         -- The pointers grouped by line.
         blockPointersGrouped = I.fromListWith (<>)
           . map (\p -> (pointerLine p, pure p))
-          . blockPointers <$> blocks
+          . blockPointers <$> errataBlocks
 
         -- Min and max line numbers as defined by the pointers of each block.
         minPointers = maybe 1 id . fmap fst . I.lookupMin <$> blockPointersGrouped
@@ -97,14 +93,18 @@ renderErrata slines (Errata {..}) = errorMessage
         srcTable = I.fromDistinctAscList
           (zip [minLine..maxLine] (drop (minLine - 1) (slices slines)))
 
+        blockMessages = getZipList $
+            renderBlock srcTable
+                <$> ZipList errataBlocks
+                <*> ZipList blockPointersGrouped
+                <*> ZipList (zip minPointers maxPointers)
+
         errorMessage = mconcat
-            [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" $ getZipList $
-                renderBlock srcTable
-                  <$> ZipList blocks
-                  <*> ZipList blockPointersGrouped
-                  <*> ZipList (zip minPointers maxPointers)
-            , TB.fromText $ maybe "" ("\n\n" <>) errataBody
+            [ TB.fromText $ maybe "" id errataHeader
+            , case blockMessages of
+                [] -> ""
+                xs -> "\n" <> unsplit "\n\n" xs
+            , TB.fromText $ maybe "" ("\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.

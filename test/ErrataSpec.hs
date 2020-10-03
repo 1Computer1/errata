@@ -31,13 +31,13 @@ goldenTests = do
         "hello world"
         [ Errata
             (Just "error")
-            (Block
+            [ Block
                 basicStyle
                 ("simple", 1, 1)
                 Nothing
                 [Pointer 1 1 6 False Nothing]
-                Nothing)
-            []
+                Nothing
+            ]
             Nothing
         ]
 
@@ -46,15 +46,15 @@ goldenTests = do
         "foo = if 1 > 2\n    then 100\n    else \"uh oh\""
         [ Errata
             (Just "error[E001]: mismatching types in `if` expression")
-            (Block
+            [ Block
                 basicStyle
                 ("file.hs", 3, 10)
                 Nothing
                 [ Pointer 2 10 13 False (Just "this has type `Int`")
                 , Pointer 3 10 17 False (Just "but this has type `String`")
                 ]
-                Nothing)
-            [ Block
+                Nothing
+            , Block
                 basicStyle
                 ("file.hs", 1, 7)
                 Nothing
@@ -64,7 +64,7 @@ goldenTests = do
                 ]
                 Nothing
             ]
-            (Just "note: use --explain E001 to learn more")
+            (Just "\nnote: use --explain E001 to learn more")
         ]
 
     golden
@@ -72,14 +72,14 @@ goldenTests = do
         "sum xs = fold (+) 0 xs"
         [ Errata
             (Just "─────── NAME UNKNOWN ───────\n\nThe name fold was not found.\n")
-            (Block
+            [ Block
                 basicStyle
                 ("file.hs", 1, 10)
                 Nothing
                 [Pointer 1 10 14 False Nothing]
-                Nothing)
-            []
-            (Just "Did you mean to use one of these?\n\n    foldl\n    foldr")
+                Nothing
+            ]
+            (Just "\nDid you mean to use one of these?\n\n    foldl\n    foldr")
         ]
 
     golden
@@ -225,6 +225,23 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T017"
+        "foo\nbar"
+        []
+
+    golden
+        "T018"
+        "foo\nbar"
+        [ Errata (Just "header") [] (Just "body")
+        ]
+
+    golden
+        "T019"
+        "foo\nbar"
+        [ Errata Nothing [] Nothing
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
@@ -241,11 +258,11 @@ golden name source es = it name $ Golden
 adhoc :: [Pointer] -> Errata
 adhoc ps = Errata
     (Just "an error")
-    (Block
+    [ Block
         basicStyle
         ("here", 1, 1)
         Nothing
         ps
-        (Just "an error occurred here"))
-    []
+        (Just "an error occurred here")
+    ]
     Nothing

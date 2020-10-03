@@ -47,10 +47,8 @@ module Errata
     , fancyYellowStyle
       -- * Pretty printer
     , prettyErrors
-    , prettyErrorsNE
     ) where
 
-import qualified Data.List.NonEmpty as N
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TB
@@ -66,8 +64,7 @@ errataSimple
     -> Errata
 errataSimple header block body = Errata
     { errataHeader = header
-    , errataBlock = block
-    , errataBlocks = []
+    , errataBlocks = [block]
     , errataBody = body
     }
 
@@ -329,7 +326,3 @@ An example error message from this might be:
 -}
 prettyErrors :: Source source => source -> [Errata] -> TL.Text
 prettyErrors source errs = TB.toLazyText $ renderErrors source errs
-
--- | A variant of 'prettyErrors' for non-empty lists. You can ensure the output is never an empty string.
-prettyErrorsNE :: Source source => source -> N.NonEmpty Errata -> TL.Text
-prettyErrorsNE source errs = prettyErrors source (N.toList errs)

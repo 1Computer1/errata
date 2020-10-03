@@ -47,8 +47,7 @@ type Label = T.Text
 -- | A collection of information for pretty printing an error.
 data Errata = Errata
     { errataHeader :: Maybe Header -- ^ The message that appears above all the blocks.
-    , errataBlock  :: Block        -- ^ The main error block, which will be used for sorting errors.
-    , errataBlocks :: [Block]      -- ^ Extra blocks in the source code to display. Blocks themselves are not sorted.
+    , errataBlocks :: [Block]      -- ^ Blocks in the source code to display.
     , errataBody   :: Maybe Body   -- ^ The message that appears below all the blocks.
     }
 

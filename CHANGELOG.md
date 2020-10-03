@@ -2,11 +2,15 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
-## Unreleased
+## Unreleased (0.3.0.0)
 
 * Optimized rendering of errors ([#5](https://github.com/1Computer1/errata/pull/5)). Huge thanks to [RiugaBachi](https://github.com/RiugaBachi) for this!
 
 * Reworked the pretty printer so that it no longer prints trailing whitespace in most places.
+
+* Removed the `errataBlock` field, and only use `errataBlocks`. Now, an `Errata` can have no blocks attached to it at all. They will also no longer be sorted beforehand, as that should be up to the user.
+
+* Removed `prettyErrorsNE`, as it is no longer useful for what it was documented for.
 
 ## 0.2.0.0
 
