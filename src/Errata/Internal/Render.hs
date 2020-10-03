@@ -22,10 +22,11 @@ module Errata.Internal.Render
     , renderSourceLines
     ) where
 
+import           Control.Arrow
+import           Control.Applicative
 import           Data.List
 import qualified Data.List.NonEmpty as N
 import qualified Data.IntMap as I
-import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
@@ -44,43 +45,92 @@ renderErrors source errs = unsplit "\n\n" prettified
 renderErrata :: Source source => [source] -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
-        chunks [] = []
-        chunks xs = xs : chunks (tail xs)
+        -- | Header block + body blocks
+        blocks = errataBlock : errataBlocks
 
-        srcTable = I.fromDistinctAscList (zip [0..] (chunks slines))
+        -- blockPointers = N.nonEmpty $ blockPointers <$> blocks
+
+        -- The pointers grouped by line.
+        blockPointersGrouped = I.fromListWith (<>) . map (pointerLine &&& pure) . blockPointers <$> blocks
+
+        -- Min and max line numbers as defined by the pointers of each block.
+        minPointers = fmap fst . I.lookupMin <$> blockPointersGrouped
+        maxPointers = fmap fst . I.lookupMax <$> blockPointersGrouped
+
+        minLine = catMaybes (minimum minPointers)
+        minLine = catMaybes (maxium maxPointers)
+
+        -- Turns a list into a list of tail slices of the original list,
+        -- each element at index @i@ dropping the first @i@ elements of the original list.
+        slices [] = []
+        slices xs = xs : slices (tail xs)
+
+        {- 
+          Optimization: we use a Patricia tree (IntMap) indexed by start line
+          into respective tail slices of the list of source lines @slines@.
+          
+          If we were to use the list @slines@ as-is: 
+            O(n) seeking per source block, O(n) traversal
+          Since, we would be linearly traversing to the start of each source block every 
+          time with no caching for future source blocks at (or close to) the same starting
+          line as previous source blocks.
+
+          If we were to use an IntMap of source lines by itself:
+            seeking becomes free, at the expense of O(n log n) traversal per source block
+          Since, we are performing an O(log n) average case Patricia lookup per line.
+          
+          Whereas if we use a hybrid IntMap + association list approach: 
+            O(n + log n) worst case, O(log n) average case, seeking per source block,
+              O(n) traversal 
+          Worse case is unevaluated slices, as this would force @slices@ evaluation, which is
+          an O(n) list traversal, on top of an O(log n) Patricia lookup. Partially-evaluated leafs will 
+          have slightly better asymptotics, and fully-evaluated leafs will be O(log n) average case,
+          which is just the cost of a Patricia lookup.
+          
+          For sufficiently large block counts with scattered pointers per block, which we assume
+          holds for real-world use cases, the traversal savings on repeat lookups will quickly favor 
+          hybrid association list + IntMap asymptotics.
+        -}
+        srcTable = I.fromDistinctAscList 
+          (zip [minLine..maxLine] (drop (minLine - 1) (slices slines)))
 
         errorMessage = mconcat
             [ TB.fromText $ maybe "" (<> "\n") errataHeader
-            , unsplit "\n\n" (map (renderBlock srcTable) (errataBlock : errataBlocks))
+            , unsplit "\n\n" $ fmap (maybe mempty id) $
+                flip (zipWith (<$>)) (zipWith (liftA2 (,)) minPointers maxPointers) $
+                  getZipList $ renderBlock srcTable 
+                    <$> ZipList blocks 
+                    <*> ZipList blockPointersGrouped
             , TB.fromText $ maybe "" ("\n\n" <>) errataBody
             ]
 
 -- | A single pretty block from block data and source lines.
-renderBlock :: Source source => I.IntMap [source] -> Block -> TB.Builder
-renderBlock slines block@(Block {..}) = blockMessage
+renderBlock :: Source source => I.IntMap [source] -> Block -> I.IntMap [Pointer] -> (Line, Line) -> TB.Builder
+renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, maxBlockLine) = blockMessage
     where
+        slines = zip [minBlockLine..maxBlockLine] (maybe [] id $ I.lookup minBlockLine srcTable)
+
+        -- Padding size before the line prefix.
+        padding = length (show maxBlockLine)
+
         blockMessage = mconcat
             [ TB.fromText $ styleLocation blockStyle blockLocation
             , TB.fromText $ maybe "" ("\n" <>) blockHeader
-            , maybe "" ("\n" <>) (renderSourceLines slines block <$> N.nonEmpty blockPointers)
+            , maybe "" ("\n" <>) (renderSourceLines slines block padding <$> sequenceA (N.nonEmpty <$> blockPointersGrouped))
             , TB.fromText $ maybe "" ("\n" <>) blockBody
             ]
 
 -- | The source lines for a block.
 renderSourceLines
     :: forall source. Source source
-    => I.IntMap [source]
+    => [(Line, source)]
     -> Block
-    -> N.NonEmpty Pointer
+    -> Int
+    -> I.IntMap (N.NonEmpty Pointer)
     -> TB.Builder
-renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
+renderSourceLines slines (Block {..}) padding pointersGrouped = unsplit "\n" sourceLines
     where
         Style {..} = blockStyle
-
-        -- Min and max line numbers, as well padding size before the line prefix.
-        minLine = fst (M.findMin pointersGrouped)
-        maxLine = fst (M.findMax pointersGrouped)
-        padding = length (show maxLine)
 
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
@@ -104,28 +154,22 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
             , TB.fromText styleLinePrefix, " "
             ]
 
-        -- The pointers grouped by line.
-        pointersGrouped = M.fromListWith (<>) $ map (\x -> (pointerLine x, pure x)) (N.toList lspans)
-
         -- The resulting source lines.
         -- Extra prefix for padding.
         sourceLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
-            : makeSourceLines 0 
-                (zip [minLine..]
-                  . take (maxLine - (minLine - 1)) 
-                  $ slines I.! (minLine - 1))
+            : makeSourceLines 0 slines
 
         -- Whether there will be a multiline span.
-        hasConnMulti = M.size (M.filter (any pointerConnect) pointersGrouped) > 1
+        hasConnMulti = I.size (I.filter (any pointerConnect) pointersGrouped) > 1
 
         -- Whether line /n/ has a connection to somewhere else (including the same line).
         hasConn :: Line -> Bool
-        hasConn n = maybe False (any pointerConnect) $ M.lookup n pointersGrouped
+        hasConn n = maybe False (any pointerConnect) $ I.lookup n pointersGrouped
 
         -- Whether line /n/ has a connection to a line before or after it (but not including).
         connAround :: Line -> (Bool, Bool)
         connAround n =
-            let (a, b) = M.split n pointersGrouped
+            let (a, b) = I.split n pointersGrouped
             in ((any . any) pointerConnect a, (any . any) pointerConnect b)
 
         -- Makes the source lines.
@@ -137,7 +181,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- The next line is a line we have to decorate with pointers.
         makeSourceLines _ (pr@(n,_):ns)
-            | Just p <- M.lookup n pointersGrouped = makeDecoratedLines p pr <> makeSourceLines 0 ns
+            | Just p <- I.lookup n pointersGrouped = makeDecoratedLines p pr <> makeSourceLines 0 ns
 
         -- The next line is an extra line, within a limit (currently 2, may be configurable later).
         makeSourceLines extra ((n,l):ns)
@@ -150,7 +194,7 @@ renderSourceLines slines (Block {..}) lspans = unsplit "\n" sourceLines
 
         -- We reached the extra line limit, so now there's some logic to figure out what's next.
         makeSourceLines _ ns =
-            let (es, ns') = break ((`M.member` pointersGrouped) . fst) ns
+            let (es, ns') = break ((`I.member` pointersGrouped) . fst) ns
             in case (es, ns') of
                 -- There were no lines left to decorate anyways.
                 (_, []) -> []
