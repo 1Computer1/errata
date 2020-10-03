@@ -49,14 +49,14 @@ foldExample = TL.putStrLn $ prettyErrors @String
     "sum xs = fold (+) 0 xs"
     [ Errata
         (Just "\x1b[31m─────── NAME UNKNOWN ───────\x1b[0m\n\nThe name \x1b[31mfold\x1b[0m was not found.\n")
-        (Block
+        [ Block
             fancyRedStyle { styleUnderline = " " }
             ("file.hs", 1, 10)
             Nothing
             [Pointer 1 10 14 False Nothing]
-            Nothing)
-        []
-        (Just "Did you mean to use one of these?\n\n    \x1b[31mfoldl\x1b[0m\n    \x1b[31mfoldr\x1b[0m")
+            Nothing
+        ]
+        (Just "\nDid you mean to use one of these?\n\n    \x1b[31mfoldl\x1b[0m\n    \x1b[31mfoldr\x1b[0m")
     ]
 
 -- | From the README.
@@ -65,15 +65,15 @@ ifExample = TL.putStrLn $ prettyErrors @String
     "foo = if 1 > 2\n    then 100\n    else \"uh oh\""
     [ Errata
         (Just "\x1b[31merror[E001]: mismatching types in `if` expression\x1b[0m")
-        (Block
+        [ Block
             fancyRedStyle
             ("file.hs", 3, 10)
             Nothing
             [ Pointer 2 10 13 False (Just "\x1b[31mthis has type `Int`\x1b[0m")
             , Pointer 3 10 17 False (Just "\x1b[31mbut this has type `String`\x1b[0m")
             ]
-            Nothing)
-        [ Block
+            Nothing
+        , Block
             fancyYellowStyle
             ("file.hs", 1, 7)
             Nothing
@@ -83,7 +83,7 @@ ifExample = TL.putStrLn $ prettyErrors @String
             ]
             Nothing
         ]
-        (Just "\x1b[33mnote: use --explain E001 to learn more\x1b[0m")
+        (Just "\n\x1b[33mnote: use --explain E001 to learn more\x1b[0m")
     ]
 
 main :: IO ()
