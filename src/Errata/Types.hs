@@ -99,7 +99,7 @@ data Pointer = Pointer
     deriving (Show, Eq)
 
 -- | Gets the column span for a 'Pointer'.
-pointerColumns :: Pointer -> (Line, Column)
+pointerColumns :: Pointer -> (Column, Column)
 pointerColumns p = (pointerColStart p, pointerColEnd p)
 
 -- | Stylization options for a block, e.g. characters to use.
