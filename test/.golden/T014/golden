@@ -3,11 +3,11 @@ an error
   |
 1 |   abcdefghijk
   |  _^^^__^^^ x
-  | | |  
+  | | |
   | | | x
 2 | | lmnopqrstuv
 3 | | wxyzfoobar
   | |_^^__^^ y
-  |   | 
+  |   |
   |   | y
 an error occurred here

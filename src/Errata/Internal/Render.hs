@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -250,32 +251,28 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 hasConnUnder = hasConnHere || hasConnAfter
 
                 -- The sorted pointers by column.
-                -- There's a reverse for when we create decorations.
                 pointersSorted = sortOn pointerColumns pointers
-                pointersSorted' = reverse pointersSorted
 
                 -- The line number we're on.
                 sline = showLine (map pointerColumns pointersSorted) line
 
                 -- The resulting decoration lines.
-                decorationLines = if
+                decorationLines = case filter (isJust . pointerLabel) (init pointersSorted) of
                     -- There's only one pointer, so no need for more than just an underline and label.
-                    | length pointersSorted' == 1 -> [underline pointersSorted']
+                    _ | length pointersSorted == 1 -> [underline pointersSorted]
 
                     -- There's no labels at all, so we just need the underline.
-                    | all (isNothing . pointerLabel) (tail pointersSorted') -> [underline pointersSorted']
+                    [] -> [underline pointersSorted]
 
                     -- Otherwise, we have three steps to do:
                     --   The underline directly underneath.
                     --   An extra connector for the labels other than the rightmost one.
                     --   The remaining connectors and the labels.
-                    | otherwise ->
-                        let hasLabels = filter (isJust . pointerLabel) $ tail pointersSorted'
-                        in underline pointersSorted'
-                            : connectors hasLabels
-                            : parar (\a (rest, xs) -> connectorAndLabel rest a : xs) [] hasLabels
+                    hasLabels -> underline pointersSorted
+                        : connectors hasLabels
+                        : (map connectorAndLabel . reverse . tail $ inits hasLabels)
 
-                -- Create an underline directly under the source.
+                -- Create an underline directly under the source. The last pointer can have a label on this line.
                 underline :: [Pointer] -> TB.Builder
                 underline ps =
                     let (decor, _) = foldDecorations
@@ -285,10 +282,9 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                                 | any pointerConnect rest -> replicateB n styleHorizontal
                                 | otherwise -> replicateB n " "
                             )
-                            ""
-                            (\n -> replicateB n styleUnderline)
+                            (\n -> (n, replicateB n styleUnderline))
                             ps
-                        lbl = maybe "" (" " <>) . pointerLabel $ head ps
+                        lbl = maybe "" (" " <>) . pointerLabel $ last ps
                         mid = if
                             | hasConnHere && hasConnBefore && hasConnAfter -> styleUpDownRight <> styleHorizontal
                             | hasConnHere && hasConnBefore                 -> styleUpRight <> styleHorizontal
@@ -298,14 +294,12 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                             | otherwise                                    -> ""
                     in prefix <> TB.fromText mid <> decor <> TB.fromText lbl
 
-                -- Create connectors underneath.
-                -- It's assumed all these pointers have labels.
+                -- Create connectors underneath. No labels are rendered here.
                 connectors :: [Pointer] -> TB.Builder
                 connectors ps =
                     let (decor, _) = foldDecorations
                             (\n _ _ -> replicateB n " ")
-                            (TB.fromText styleVertical)
-                            (\n -> replicateB (n - 1) " ")
+                            (\_ -> (1, TB.fromText styleVertical))
                             ps
                         mid = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
@@ -313,25 +307,22 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                             | otherwise                   -> ""
                     in prefix <> TB.fromText mid <> decor
 
-                -- Create connectors and labels underneath.
-                -- It's assumed all these pointers have labels.
-                -- The single pointer passed in is the label to make at the end of the decorations.
-                connectorAndLabel :: [Pointer] -> Pointer -> TB.Builder
-                connectorAndLabel ps p =
+                -- Create connectors and labels underneath. The last pointer can have a label on this line.
+                connectorAndLabel :: [Pointer] -> TB.Builder
+                connectorAndLabel ps =
                     let (decor, finalCol) = foldDecorations
                             (\n _ _ -> replicateB n " ")
-                            (TB.fromText styleVertical)
-                            (\n -> replicateB (n - 1) " ")
-                            ps
+                            (\_ -> (1, TB.fromText styleVertical))
+                            (init ps)
                         lbl = maybe ""
                             (\x -> mconcat
-                                [ replicateB (pointerColStart p - finalCol) " "
+                                [ replicateB (pointerColStart (last ps) - finalCol) " "
                                 , TB.fromText styleUpRight
                                 , " "
                                 , TB.fromText x
                                 ]
                             )
-                            (pointerLabel p)
+                            (pointerLabel (last ps))
                         mid = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
                             | hasConnMulti                -> "  "
@@ -341,32 +332,33 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 -- | Makes a line of decorations below the source.
 foldDecorations
     :: (Column -> Bool -> [Pointer] -> TB.Builder) -- ^ Catch up from the previous pointer to this pointer.
-    -> TB.Builder                                  -- ^ Something in the middle.
-    -> (Column -> TB.Builder)                      -- ^ Reach the next pointer.
+    -> (Column -> (Int, TB.Builder))               -- ^ Something in the middle that ends before the next pointer.
     -> [Pointer]
     -> (TB.Builder, Column)
-foldDecorations catchUp something reachAfter ps =
-    let (decor, finalCol, _, _) = foldr
-            (\(Pointer {..}) (xs, c, rest, isFirst) ->
+foldDecorations catchUp reachAfter ps =
+    let (decor, finalCol, _) = paral
+            (\(rest, (xs, c, isFirst)) p@(Pointer {..}) ->
+                let (afterLen, afterText) = reachAfter (pointerColEnd - pointerColStart)
+                in
                 ( mconcat
                     [ xs
-                    , catchUp (pointerColStart - c) isFirst rest
-                    , something
-                    , reachAfter (pointerColEnd - pointerColStart)
+                    , catchUp (pointerColStart - c) isFirst (p:rest)
+                    , afterText
                     ]
-                , pointerColEnd
-                , tail rest
+                , pointerColStart + afterLen
                 , False
                 )
             )
-            ("", 1, reverse ps, True)
+            ("", 1, True)
             ps
     in (decor, finalCol)
 
--- | Paramorphism on lists (lazily, from the right).
-parar :: (a -> ([a], b) -> b) -> b -> [a] -> b
-parar _ b []     = b
-parar f b (a:as) = f a (as, parar f b as)
+-- | Paramorphism on lists (strictly, from the left).
+paral :: (([a], b) -> a -> b) -> b -> [a] -> b
+paral _ b [] = b
+paral f b (a:as) =
+    let !b' = f (as, b) a
+    in paral f b' as
 
 -- | Puts text between each item.
 unsplit :: TB.Builder -> [TB.Builder] -> TB.Builder
