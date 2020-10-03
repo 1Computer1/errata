@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-|
 Module      : Errata.Internal.Render
@@ -23,10 +23,9 @@ module Errata.Internal.Render
     , renderSourceLines
     ) where
 
-import           Control.Arrow
 import           Control.Applicative
-import           Data.List
 import qualified Data.IntMap as I
+import           Data.List
 import           Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
@@ -45,11 +44,13 @@ renderErrors source errs = unsplit "\n\n" prettified
 renderErrata :: Source source => [source] -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
-        -- | Header block + body blocks
+        -- Header block + body blocks
         blocks = errataBlock : errataBlocks
 
         -- The pointers grouped by line.
-        blockPointersGrouped = I.fromListWith (<>) . map (pointerLine &&& pure) . blockPointers <$> blocks
+        blockPointersGrouped = I.fromListWith (<>) 
+          . map (\p -> (pointerLine p, pure p)) 
+          . blockPointers <$> blocks
 
         -- Min and max line numbers as defined by the pointers of each block.
         minPointers = maybe 1 id . fmap fst . I.lookupMin <$> blockPointersGrouped
@@ -59,7 +60,10 @@ renderErrata slines (Errata {..}) = errorMessage
         maxLine = maximum maxPointers
 
         -- Turns a list into a list of tail slices of the original list,
-        -- each element at index @i@ dropping the first @i@ elements of the original list.
+        -- each element at index @i@ dropping the first @i@ elements of the original list
+        -- and tailing a monoidal unit 'mempty'. This allows for correct behavior on
+        -- out-of-source-bounds pointers.
+        slices :: Monoid a => [a] -> [[a]]
         slices [] = repeat (repeat mempty)
         slices xs = (xs <> repeat mempty) : slices (tail xs)
 
@@ -74,7 +78,7 @@ renderErrata slines (Errata {..}) = errorMessage
           line as previous source blocks.
 
           If we were to use an IntMap of source lines by itself:
-            seeking becomes free, at the expense of O(n log n) traversal per source block
+            Seeking becomes free, at the expense of O(n log n) traversal per source block
           Since, we are performing an O(log n) average case Patricia lookup per line.
           
           Whereas if we use a hybrid IntMap + association list approach: 
@@ -186,11 +190,11 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         makeSourceLines _ [] = []
 
         -- The next line is a line we have to decorate with pointers.
-        makeSourceLines _ (pr@(n,_):ns)
+        makeSourceLines _ (pr@(n, _):ns)
             | Just p <- I.lookup n pointersGrouped = makeDecoratedLines p pr <> makeSourceLines 0 ns
 
         -- The next line is an extra line, within a limit (currently 2, may be configurable later).
-        makeSourceLines extra ((n,l):ns)
+        makeSourceLines extra ((n, l):ns)
             | extra < 2 =
                 let mid = if
                         | snd (connAround n) -> TB.fromText styleVertical <> " "
@@ -210,7 +214,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
                 -- There is a single extra line, so we can use that as the before-line.
                 -- No need for omission, because it came right before.
-                ([(n,l)], _) ->
+                ([(n, l)], _) ->
                     let mid = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
@@ -220,7 +224,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 -- There are more than one line in between, so we omit all but the last.
                 -- We use the last one as the before-line.
                 (_, _) ->
-                    let (n,l) = last es
+                    let (n, l) = last es
                         mid = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
@@ -230,7 +234,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
         makeDecoratedLines :: [Pointer] -> (Line, source) -> [TB.Builder]
-        makeDecoratedLines pointers (num,line) = 
+        makeDecoratedLines pointers (num, line) = 
             (linePrefix num <> TB.fromText lineConnector <> sline) : decorationLines
             where
                 lineConnector = if
@@ -256,7 +260,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 -- The resulting decoration lines.
                 decorationLines = if
                     -- There's only one pointer, so no need for more than just an underline and label.
-                    | length pointersSorted' == 1                             -> [underline pointersSorted']
+                    | length pointersSorted' == 1 -> [underline pointersSorted']
 
                     -- There's no labels at all, so we just need the underline.
                     | all (isNothing . pointerLabel) (tail pointersSorted') -> [underline pointersSorted']
@@ -276,10 +280,11 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 underline ps =
                     let (decor, _) = foldDecorations
                             (\n isFirst rest -> if
-                                | isFirst && any pointerConnect rest && hasConnAround -> replicateB n styleHorizontal
-                                | isFirst                                             -> replicateB n " "
-                                | any pointerConnect rest                             -> replicateB n styleHorizontal
-                                | otherwise                                           -> replicateB n " "
+                                | isFirst && any pointerConnect rest && hasConnAround -> 
+                                    replicateB n styleHorizontal
+                                | isFirst -> replicateB n " "
+                                | any pointerConnect rest -> replicateB n styleHorizontal
+                                | otherwise -> replicateB n " "
                             )
                             ""
                             (\n -> replicateB n styleUnderline)

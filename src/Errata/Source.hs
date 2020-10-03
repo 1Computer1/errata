@@ -20,6 +20,8 @@ import qualified Data.Text.Lazy as TL
 A class for manipulating and converting source text.
 
 For @ByteString@ source types, you should convert it to one of the built-in instances with your encoding of choice.
+
+Every @Source@ must be a @Monoid@ to allow for a @mempty@ unit which will be used in the event that a pointer references an out-of-bounds source line.
 -}
 class Monoid s => Source s where
     -- | Splits the source into lines.
