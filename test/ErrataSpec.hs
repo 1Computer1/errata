@@ -167,11 +167,69 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T012"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 2 True (Just "x")
+            , Pointer 1 3 4 True (Just "y")
+            , Pointer 1 5 6 False (Just "z")
+            , Pointer 1 7 8 False (Just "z")
+            , Pointer 1 9 10 False (Just "z")
+            , Pointer 2 5 8 False (Just "w")
+            , Pointer 3 1 3 True (Just "v")
+            ]
+        ]
+
+    golden
+        "T013"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 2 True (Just "x")
+            , Pointer 1 3 4 True (Just "y")
+            , Pointer 1 7 8 True Nothing
+            , Pointer 1 9 10 True (Just "z")
+            , Pointer 2 5 8 False (Just "w")
+            , Pointer 3 1 3 True (Just "v")
+            ]
+        ]
+
+    golden
+        "T014"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 4 True (Just "x")
+            , Pointer 1 6 9 True (Just "x")
+            , Pointer 3 1 3 True (Just "y")
+            , Pointer 3 5 7 True (Just "y")
+            ]
+        ]
+
+    golden
+        "T015"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 3 False Nothing
+            , Pointer 1 5 6 False Nothing
+            , Pointer 1 7 9 False (Just "x")
+            ]
+        ]
+
+    golden
+        "T016"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 1 3 True Nothing
+            , Pointer 1 5 6 True Nothing
+            , Pointer 1 7 9 True (Just "x")
+            ]
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
     { output = TL.toStrict $ prettyErrors source es
-    , encodePretty = show
+    , encodePretty = T.unpack
     , testName = name
     , writeToFile = T.writeFile
     , readFromFile = T.readFile
