@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{-|
+{- |
 Module      : Errata
 Copyright   : (c) 2020 comp
 License     : MIT
@@ -124,8 +124,7 @@ blockConnected'
 blockConnected' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) bm =
     blockConnected style fp hm (l1, c1, c1 + 1, lbl1) (l2, c2, c2 + 1, lbl2) bm
 
-{-|
-A block that points to two parts of the source that are visually connected together.
+{- | A block that points to two parts of the source that are visually connected together.
 
 If the two parts of the source happen to be on the same line, the pointers are merged into one.
 -}
@@ -161,8 +160,7 @@ blockMerged'
 blockMerged' style fp hm (l1, c1, lbl1) (l2, c2, lbl2) lbl bm =
     blockMerged style fp hm (l1, c1, c1 + 1, lbl1) (l2, c2, c2 + 1, lbl2) lbl bm
 
-{-|
-A basic style using only ASCII characters.
+{- | A basic style using only ASCII characters.
 
 Errors should look like so:
 
@@ -199,8 +197,7 @@ basicStyle = Style
     , styleUpDownRight = "|"
     }
 
-{-|
-A fancy style using Unicode characters.
+{- | A fancy style using Unicode characters.
 
 Errors should look like so:
 
@@ -275,8 +272,7 @@ fancyYellowStyle = Style
     , styleUpDownRight = "\x1b[33m├\x1b[0m"
     }
 
-{-|
-Pretty prints errors. The original source is required. Returns 'Data.Text.Lazy.Text' (lazy). If the list is empty,
+{- | Pretty prints errors. The original source is required. Returns 'Data.Text.Lazy.Text' (lazy). If the list is empty,
 an empty string is returned.
 
 Suppose we had an error of this type:

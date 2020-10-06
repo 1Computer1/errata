@@ -1,4 +1,4 @@
-{-|
+{- |
 Module      : Errata.Types
 Copyright   : (c) 2020 comp
 License     : MIT
@@ -51,8 +51,7 @@ data Errata = Errata
     , errataBody   :: Maybe Body   -- ^ The message that appears below all the blocks.
     }
 
-{-|
-Information about a block in the source code, such as pointers and messages.
+{- | Information about a block in the source code, such as pointers and messages.
 
 Each block has a style associated with it.
 -}
@@ -60,30 +59,33 @@ data Block = Block
     { -- | The style of the block.
       blockStyle :: Style
 
-      {-|
-      The filepath, line, and column of the block. These start at 1.
+      {- | The filepath, line, and column of the block. These start at 1.
 
-      This is used for sorting errors, as well as to create the text that details the location.
+      This is used to create the text that details the location.
       -}
     , blockLocation :: (FilePath, Line, Column)
 
-      -- | The header message for the block. This will appear below the location and above the source lines.
+      {- | The header message for the block.
+
+      This will appear below the location and above the source lines.
+      -}
     , blockHeader :: Maybe Header
 
-      {-|
-      The block's pointers. These are used to "point out" parts of the source code in this block.
+      {- | The block's pointers. These are used to "point out" parts of the source code in this block.
 
       The locations of each of these pointers must be non-overlapping. If the pointers are touching at a boundary
       however, that is allowed.
       -}
     , blockPointers :: [Pointer]
 
-      -- | The body message for the block. This will appear below the source lines.
+      {- | The body message for the block.
+
+      This will appear below the source lines.
+      -}
     , blockBody :: Maybe Body
     }
 
-{-|
-A pointer is the span of the source code at a line, from one column to another. Each of the positions start at 1.
+{- | A pointer is the span of the source code at a line, from one column to another. Each of the positions start at 1.
 
 A pointer may also have a label that will display inline.
 
@@ -104,59 +106,70 @@ pointerColumns p = (pointerColStart p, pointerColEnd p)
 
 -- | Stylization options for a block, e.g. characters to use.
 data Style = Style
-    { -- | Shows the location of a block at a file, line, and column.
+    { {- | Shows the location of a block at a file, line, and column.
+
+      This is put on its own line just above the source lines.
+      -}
       styleLocation :: (FilePath, Line, Column) -> T.Text
 
-      -- | Shows the line number /n/ for a source line. The result should visually be the same length as just @show n@.
+      {- | Shows the line number /n/ for a source line.
+
+      The result should visually be the same length as just @show n@.
+      -}
     , styleNumber :: Line -> T.Text
 
-      {-|
-      Stylize a source line.
+      {- | Stylize a source line.
 
       Column pointers of the text that are being underlined are given for highlighting purposes. The result of this
       should visually take up the same space as the original line.
       -}
     , styleLine :: [(Column, Column)] -> T.Text -> T.Text
 
-      {-|
-      The text to use as an ellipsis in the position of line numbers for when lines are omitted. This should visually
-      be one character.
+      {- | The text to use as an ellipsis in the position of line numbers for when lines are omitted.
+
+      This should visually be one character.
       -}
     , styleEllipsis :: T.Text
 
-      -- | The prefix before the source lines.
+      {- | The prefix before the source lines.
+
+      Before it may be the line number, and after it the source line.
+      -}
     , styleLinePrefix :: T.Text
 
-      {-|
-      The text to underline a character in a pointer. This should visually be one character.
+      {- | The text to underline a character in a pointer.
+
+      This should visually be one character.
       -}
     , styleUnderline :: T.Text
 
-      {-|
-      The text to use as a vertical bar when connecting pointers. This should visually be one character.
+      {- | The text to use as a vertical bar when connecting pointers.
+
+      This should visually be one character.
       -}
     , styleVertical :: T.Text
 
-      {-|
-      The text to use as a horizontal bar when connecting pointers. This should visually be one character.
+      {- | The text to use as a horizontal bar when connecting pointers.
+
+      This should visually be one character.
       -}
     , styleHorizontal :: T.Text
 
-      {-|
-      The text to use as a connector downwards and rightwards when connecting pointers. This should visually
-      be one character.
+      {- | The text to use as a connector downwards and rightwards when connecting pointers.
+
+      This should visually be one character.
       -}
     , styleDownRight :: T.Text
 
-      {-|
-      The text to use as a connector upwards and rightwards when connecting pointers. This should visually
-      be one character.
+      {- | The text to use as a connector upwards and rightwards when connecting pointers.
+
+      This should visually be one character.
       -}
     , styleUpRight :: T.Text
 
-      {-|
-      The text to use as a connector upwards, downwards, and rightwards when connecting pointers. This should visually
-      be one character.
+      {- | The text to use as a connector upwards, downwards, and rightwards when connecting pointers.
+
+      This should visually be one character.
       -}
     , styleUpDownRight :: T.Text
     }

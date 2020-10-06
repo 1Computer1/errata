@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-|
+
+{- |
 Module      : Errata.Source
 Copyright   : (c) 2020 comp
 License     : MIT
@@ -16,8 +17,7 @@ module Errata.Source
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
-{-|
-A class for manipulating and converting source text.
+{- | A class for manipulating and converting source text.
 
 For @ByteString@ source types, you should convert it to one of the built-in instances with your encoding of choice.
 
