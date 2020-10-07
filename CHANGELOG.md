@@ -12,6 +12,8 @@
 
 * Removed `prettyErrorsNE`, as it is no longer useful for what it was documented for.
 
+* Fixed the rendering of `Block`s with no `Pointer`s adding extra blank lines.
+
 ## 0.2.0.0
 
 * Added new `blockHeader` field to `Block`, which will put text underneath the location text but above the source lines. This also affects all the block helper functions, which now have an argument for the header.

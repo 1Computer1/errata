@@ -22,6 +22,9 @@ module Errata.Internal.Render
     , renderErrata
     , renderBlock
     , renderSourceLines
+    , groupBlockPointers
+    , slices
+    , makeSourceTable
     ) where
 
 import           Control.Applicative
@@ -45,23 +48,14 @@ renderErrata :: Source source => [source] -> Errata -> TB.Builder
 renderErrata slines (Errata {..}) = errorMessage
     where
         -- The pointers grouped by line.
-        blockPointersGrouped = I.fromListWith (<>)
-          . map (\p -> (pointerLine p, pure p))
-          . blockPointers <$> errataBlocks
+        blockPointersGrouped = map groupBlockPointers errataBlocks
 
         -- Min and max line numbers as defined by the pointers of each block.
-        minPointers = maybe 1 id . fmap fst . I.lookupMin <$> blockPointersGrouped
-        maxPointers = maybe 0 id . fmap fst . I.lookupMax <$> blockPointersGrouped
+        minPointers = map (maybe 1 id . fmap fst . I.lookupMin) blockPointersGrouped
+        maxPointers = map (maybe 1 id . fmap fst . I.lookupMax) blockPointersGrouped
 
         minLine = minimum minPointers
         maxLine = maximum maxPointers
-
-        -- Turns a list into a list of tail slices of the original list,
-        -- each element at index @i@ dropping the first @i@ elements of the original list and tailing a 'mempty'.
-        -- This allows for correct behavior on out-of-source-bounds pointers.
-        slices :: Monoid a => [a] -> [[a]]
-        slices [] = repeat (repeat mempty)
-        slices xs = (xs <> repeat mempty) : slices (tail xs)
 
         {- Optimization: we use a Patricia tree (IntMap) indexed by start line
         into respective tail slices of the list of source lines @slines@.
@@ -87,7 +81,7 @@ renderErrata slines (Errata {..}) = errorMessage
         holds for real-world use cases, the traversal savings on repeat lookups will quickly favor
         hybrid association list + IntMap asymptotics.
         -}
-        srcTable = I.fromDistinctAscList (zip [minLine..maxLine] (drop (minLine - 1) (slices slines)))
+        srcTable = makeSourceTable minLine maxLine slines
 
         blockMessages = getZipList $
             renderBlock srcTable
@@ -99,21 +93,41 @@ renderErrata slines (Errata {..}) = errorMessage
             [ TB.fromText $ maybe "" id errataHeader
             , case blockMessages of
                 [] -> ""
-                xs -> "\n" <> unsplit "\n\n" xs
+                xs -> case errataHeader of
+                    Nothing -> unsplit "\n\n" xs
+                    Just _  -> "\n" <> unsplit "\n\n" xs
             , TB.fromText $ maybe "" ("\n" <>) errataBody
             ]
+
+-- | Group the pointers of a block by the line they appear on.
+groupBlockPointers :: Block -> I.IntMap [Pointer]
+groupBlockPointers = I.fromListWith (<>) . map (\p -> (pointerLine p, pure p)) . blockPointers
+
+{- | Turns a list into a list of tail slices of the original list, with each element at index @i@ dropping
+the first @i@ elements of the original list and tailing a 'mempty'.
+
+This allows for correct behavior on out-of-source-bounds pointers.
+-}
+slices :: Monoid a => [a] -> [[a]]
+slices [] = repeat (repeat mempty)
+slices xs = (xs <> repeat mempty) : slices (tail xs)
+
+-- | Create a source table from the given line span and source lines.
+makeSourceTable :: Monoid a => Line -> Line -> [a] -> I.IntMap [a]
+makeSourceTable minLine maxLine slines = I.fromDistinctAscList $
+    zip [minLine .. maxLine] (drop (minLine - 1) (slices slines))
 
 -- | Renders a single block.
 renderBlock
     :: Source source
-    => I.IntMap [source]
-    -> Block
-    -> I.IntMap [Pointer]
-    -> (Line, Line)
+    => I.IntMap [source]  -- ^ The source table.
+    -> Block              -- ^ The block to render.
+    -> I.IntMap [Pointer] -- ^ The pointers of this block grouped by line.
+    -> (Line, Line)       -- ^ The mininum and maximum lines of this block.
     -> TB.Builder
 renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, maxBlockLine) = blockMessage
     where
-        slines = zip [minBlockLine..maxBlockLine] (maybe [] id $ I.lookup minBlockLine srcTable)
+        slines = zip [minBlockLine .. maxBlockLine] (maybe [] id $ I.lookup minBlockLine srcTable)
 
         -- Padding size before the line prefix.
         padding = length (show maxBlockLine)
@@ -129,10 +143,10 @@ renderBlock srcTable block@(Block {..}) blockPointersGrouped ~(minBlockLine, max
 renderSourceLines
     :: forall source
     .  Source source
-    => [(Line, source)]
-    -> Block
-    -> Int
-    -> I.IntMap [Pointer]
+    => [(Line, source)]   -- ^ The source lines, from the minimum line to the maximum line for the block.
+    -> Block              -- ^ The block to render.
+    -> Int                -- ^ The length of the actual number of the maximum line.
+    -> I.IntMap [Pointer] -- ^ The pointers of this block grouped by line.
     -> Maybe (TB.Builder)
 renderSourceLines _ _ _ (I.null -> True) = Nothing
 renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "\n" sourceLines

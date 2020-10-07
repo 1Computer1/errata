@@ -242,6 +242,26 @@ goldenTests = do
         [ Errata Nothing [] Nothing
         ]
 
+    golden
+        "T020"
+        "foo\nbar"
+        [ Errata
+            (Just "header")
+            [ Block basicStyle ("here", 1, 1) (Just "block header") [] (Just "block body")
+            ]
+            (Just "body")
+        ]
+
+    golden
+        "T021"
+        "foo\nbar"
+        [ Errata
+            Nothing
+            [ Block basicStyle ("here", 1, 1) (Just "block header") [] (Just "block body")
+            ]
+            Nothing
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
