@@ -45,7 +45,7 @@ renderErrors source errs = errorMessage
 
         -- Min and max line numbers as defined by the pointers of each block, for each Errata.
         minPointers = (map . map) (maybe 1 id . fmap fst . I.lookupMin) blockPointersGrouped
-        maxPointers = (map . map) (maybe 1 id . fmap fst . I.lookupMax) blockPointersGrouped
+        maxPointers = (map . map) (maybe 0 id . fmap fst . I.lookupMax) blockPointersGrouped
 
         minLine = minimum (concat minPointers)
         maxLine = maximum (concat maxPointers)
@@ -84,6 +84,24 @@ renderErrors source errs = errorMessage
 
         errorMessage = unsplit "\n\n" errataMessages
 
+-- | Group the pointers of a block by the line they appear on.
+groupBlockPointers :: Block -> I.IntMap [Pointer]
+groupBlockPointers = I.fromListWith (<>) . map (\p -> (pointerLine p, pure p)) . blockPointers
+
+-- | Create a source table from the given line span and source lines.
+makeSourceTable :: Monoid a => Line -> Line -> [a] -> I.IntMap [a]
+makeSourceTable minLine maxLine slines = I.fromDistinctAscList $
+    zip [minLine .. maxLine] (drop (minLine - 1) (slices slines))
+
+{- | Turns a list into a list of tail slices of the original list, with each element at index @i@ dropping
+the first @i@ elements of the original list and tailing a 'mempty'.
+
+This allows for correct behavior on out-of-source-bounds pointers.
+-}
+slices :: Monoid a => [a] -> [[a]]
+slices [] = repeat (repeat mempty)
+slices xs = (xs <> repeat mempty) : slices (tail xs)
+
 -- | Renders a single 'Errata'.
 renderErrata
     :: Source source
@@ -109,24 +127,6 @@ renderErrata srcTable (Errata {..}) blockPointersGrouped minPointers maxPointers
                     Just _  -> "\n" <> unsplit "\n\n" xs
             , TB.fromText $ maybe "" ("\n" <>) errataBody
             ]
-
--- | Group the pointers of a block by the line they appear on.
-groupBlockPointers :: Block -> I.IntMap [Pointer]
-groupBlockPointers = I.fromListWith (<>) . map (\p -> (pointerLine p, pure p)) . blockPointers
-
-{- | Turns a list into a list of tail slices of the original list, with each element at index @i@ dropping
-the first @i@ elements of the original list and tailing a 'mempty'.
-
-This allows for correct behavior on out-of-source-bounds pointers.
--}
-slices :: Monoid a => [a] -> [[a]]
-slices [] = repeat (repeat mempty)
-slices xs = (xs <> repeat mempty) : slices (tail xs)
-
--- | Create a source table from the given line span and source lines.
-makeSourceTable :: Monoid a => Line -> Line -> [a] -> I.IntMap [a]
-makeSourceTable minLine maxLine slines = I.fromDistinctAscList $
-    zip [minLine .. maxLine] (drop (minLine - 1) (slices slines))
 
 -- | Renders a single block.
 renderBlock
