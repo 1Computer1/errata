@@ -38,24 +38,17 @@ import           Errata.Types
 
 -- | Renders a collection of 'Errata'.
 renderErrors :: Source source => source -> [Errata] -> TB.Builder
-renderErrors source errs = unsplit "\n\n" prettified
+renderErrors source errs = errorMessage
     where
-        slines = sourceToLines source
-        prettified = map (renderErrata slines) errs
+        -- The pointers grouped by line, for each Errata.
+        blockPointersGrouped = map (map groupBlockPointers . errataBlocks) errs
 
--- | A single pretty error from source lines and an 'Errata'.
-renderErrata :: Source source => [source] -> Errata -> TB.Builder
-renderErrata slines (Errata {..}) = errorMessage
-    where
-        -- The pointers grouped by line.
-        blockPointersGrouped = map groupBlockPointers errataBlocks
+        -- Min and max line numbers as defined by the pointers of each block, for each Errata.
+        minPointers = (map . map) (maybe 1 id . fmap fst . I.lookupMin) blockPointersGrouped
+        maxPointers = (map . map) (maybe 1 id . fmap fst . I.lookupMax) blockPointersGrouped
 
-        -- Min and max line numbers as defined by the pointers of each block.
-        minPointers = map (maybe 1 id . fmap fst . I.lookupMin) blockPointersGrouped
-        maxPointers = map (maybe 1 id . fmap fst . I.lookupMax) blockPointersGrouped
-
-        minLine = minimum minPointers
-        maxLine = maximum maxPointers
+        minLine = minimum (concat minPointers)
+        maxLine = maximum (concat maxPointers)
 
         {- Optimization: we use a Patricia tree (IntMap) indexed by start line
         into respective tail slices of the list of source lines @slines@.
@@ -81,13 +74,31 @@ renderErrata slines (Errata {..}) = errorMessage
         holds for real-world use cases, the traversal savings on repeat lookups will quickly favor
         hybrid association list + IntMap asymptotics.
         -}
-        srcTable = makeSourceTable minLine maxLine slines
+        srcTable = makeSourceTable minLine maxLine (sourceToLines source)
 
-        blockMessages = getZipList $
-            renderBlock srcTable
-                <$> ZipList errataBlocks
-                <*> ZipList blockPointersGrouped
-                <*> ZipList (zip minPointers maxPointers)
+        errataMessages = getZipList $ renderErrata srcTable
+            <$> ZipList errs
+            <*> ZipList blockPointersGrouped
+            <*> ZipList minPointers
+            <*> ZipList maxPointers
+
+        errorMessage = unsplit "\n\n" errataMessages
+
+-- | Renders a single 'Errata'.
+renderErrata
+    :: Source source
+    => I.IntMap [source]    -- ^ The source table.
+    -> Errata               -- ^ The 'Errata' to render.
+    -> [I.IntMap [Pointer]] -- ^ The pointers of each block grouped by line.
+    -> [Line]               -- ^ The mininum line of each block.
+    -> [Line]               -- ^ The maxinum line of each block.
+    -> TB.Builder
+renderErrata srcTable (Errata {..}) blockPointersGrouped minPointers maxPointers = errorMessage
+    where
+        blockMessages = getZipList $ renderBlock srcTable
+            <$> ZipList errataBlocks
+            <*> ZipList blockPointersGrouped
+            <*> ZipList (zip minPointers maxPointers)
 
         errorMessage = mconcat
             [ TB.fromText $ maybe "" id errataHeader
