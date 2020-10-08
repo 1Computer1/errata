@@ -11,7 +11,7 @@ Portability : portable
 A class for source text types. You should not need to use this, except to add new source types.
 -}
 module Errata.Source
-    ( Source(..)
+    ( Source (..)
     ) where
 
 import qualified Data.Text as T

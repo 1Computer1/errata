@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module ErrataSpec (spec) where
+module ErrataSpec
+    ( spec
+    ) where
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T

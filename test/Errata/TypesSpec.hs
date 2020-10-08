@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Errata.TypesSpec (spec) where
+module Errata.TypesSpec
+    ( spec
+    ) where
 
 import Errata.Types
 import Test.Hspec

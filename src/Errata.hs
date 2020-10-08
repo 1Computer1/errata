@@ -28,19 +28,19 @@ For easier reading, we define:
 -}
 module Errata
     ( -- * Error format data
-      Errata(..)
+      Errata (..)
     , errataSimple
       -- * Blocks and pointers
-    , Block(..)
+    , Block (..)
     , blockSimple
     , blockSimple'
     , blockConnected
     , blockConnected'
     , blockMerged
     , blockMerged'
-    , Pointer(..)
+    , Pointer (..)
       -- * Styling options
-    , Style(..)
+    , Style (..)
     , basicStyle
     , fancyStyle
     , fancyRedStyle

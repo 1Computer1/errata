@@ -383,7 +383,7 @@ paral f b (a:as) =
 
 -- | Puts text between each item.
 unsplit :: TB.Builder -> [TB.Builder] -> TB.Builder
-unsplit _ [] = ""
+unsplit _ []     = ""
 unsplit a (x:xs) = foldl' (\acc y -> acc <> a <> y) x xs
 {-# INLINE unsplit #-}
 

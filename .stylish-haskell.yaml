@@ -1,0 +1,48 @@
+# Current version is 0.12.2.0.
+# See https://github.com/jaspervdj/stylish-haskell/blob/main/data/stylish-haskell.yaml for documentation.
+
+steps:
+  - module_header:
+      indent: 4
+      sort: false
+      separate_lists: true
+
+  - records:
+      equals: "indent 4"
+      first_field: "indent 4"
+      field_comment: 2
+      deriving: 4
+      via: "indent 4"
+      sort_deriving: false
+      break_enums: false
+      break_single_constructors: false
+      curried_context: false
+
+  - simple_align:
+      cases: adjacent
+      top_level_patterns: adjacent
+      records: adjacent
+      multi_way_if: adjacent
+
+  - imports:
+      align: group
+      list_align: with_module_name
+      pad_module_names: false
+      long_list_align: inline
+      empty_list_align: inherit
+      list_padding: 4
+      separate_lists: true
+      space_surround: false
+      ghc_lib_parser: true
+
+  - language_pragmas:
+      style: vertical
+      align: true
+      remove_redundant: true
+      language_prefix: LANGUAGE
+
+  - trailing_whitespace: {}
+
+columns: 120
+newline: native
+cabal: true

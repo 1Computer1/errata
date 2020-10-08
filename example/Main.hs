@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications  #-}
 
-module Main where
+module Main
+    where
 
 import           Data.List
 import qualified Data.Text as T
