@@ -2,7 +2,7 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
-## Unreleased (0.3.0.0)
+## 0.3.0.0
 
 * Support GHC 9.0.1 (and eventually 9.2).
 
