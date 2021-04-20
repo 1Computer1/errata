@@ -4,6 +4,8 @@
 
 ## Unreleased (0.3.0.0)
 
+* Support GHC 9.0.1 (and eventually 9.2).
+
 * Optimized rendering of errors ([#5](https://github.com/1Computer1/errata/pull/5)). Huge thanks to [RiugaBachi](https://github.com/RiugaBachi) for this! This also adds a `Monoid` constraint to `Source`.
 
 * Reworked the pretty printer so that it no longer prints trailing whitespace in most places.
