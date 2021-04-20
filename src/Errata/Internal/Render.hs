@@ -27,10 +27,10 @@ module Errata.Internal.Render
     , makeSourceTable
     ) where
 
-import           Control.Applicative
+import           Control.Applicative (ZipList(..))
 import qualified Data.IntMap as I
-import           Data.List
-import           Data.Maybe
+import           Data.List (foldl', inits, sortOn)
+import           Data.Maybe (isJust)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
 import           Errata.Source
