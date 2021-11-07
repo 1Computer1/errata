@@ -167,7 +167,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
         showLine :: [(Column, Column)] -> source -> TB.Builder
-        showLine hs = TB.fromText . styleLine hs . sourceToText
+        showLine hs = TB.fromText . T.replace "\t" (T.replicate styleTabWidth " ") . styleLine hs . sourceToText
 
         -- Generic prefix without line number.
         prefix = mconcat
@@ -274,6 +274,9 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 -- The sorted pointers by column.
                 pointersSorted = sortOn pointerColumns pointers
 
+                -- The actual source line.
+                lineText = sourceToText line
+
                 -- The line number we're on.
                 sline = showLine (map pointerColumns pointersSorted) line
 
@@ -297,14 +300,15 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 underline :: [Pointer] -> TB.Builder
                 underline ps =
                     let (decor, _) = foldDecorations
-                            (\n isFirst rest -> if
-                                | isFirst && any pointerConnect rest && hasConnAround -> replicateB n styleHorizontal
-                                | isFirst                                             -> replicateB n " "
-                                | any pointerConnect rest                             -> replicateB n styleHorizontal
-                                | otherwise                                           -> replicateB n " "
+                            (\n isFirst rest text -> if
+                                | isFirst && any pointerConnect rest && hasConnAround -> replaceWithWidth n styleTabWidth text styleHorizontal
+                                | isFirst                                             -> replaceWithWidth n styleTabWidth text " "
+                                | any pointerConnect rest                             -> replaceWithWidth n styleTabWidth text styleHorizontal
+                                | otherwise                                           -> replaceWithWidth n styleTabWidth text " "
                             )
-                            (\n -> (n, replicateB n styleUnderline))
+                            (\n text -> (n, replaceWithWidth n styleTabWidth text styleUnderline))
                             ps
+                            lineText
                         lbl = maybe "" (" " <>) . pointerLabel $ last ps
                         mid = if
                             | hasConnHere && hasConnBefore && hasConnAfter -> styleUpDownRight <> styleHorizontal
@@ -319,9 +323,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 connectors :: [Pointer] -> TB.Builder
                 connectors ps =
                     let (decor, _) = foldDecorations
-                            (\n _ _ -> replicateB n " ")
-                            (\_ -> (1, TB.fromText styleVertical))
+                            (\n _ _ text -> replaceWithWidth n styleTabWidth text " ")
+                            (\_ _ -> (1, TB.fromText styleVertical))
                             ps
+                            lineText
                         mid = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
                             | hasConnMulti                -> "  "
@@ -332,9 +337,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 connectorAndLabel :: [Pointer] -> TB.Builder
                 connectorAndLabel ps =
                     let (decor, finalCol) = foldDecorations
-                            (\n _ _ -> replicateB n " ")
-                            (\_ -> (1, TB.fromText styleVertical))
+                            (\n _ _ text -> replaceWithWidth n styleTabWidth text " ")
+                            (\_ _ -> (1, TB.fromText styleVertical))
                             (init ps)
+                            lineText
                         lbl = maybe ""
                             (\x -> mconcat
                                 [ replicateB (pointerColStart (last ps) - finalCol) " "
@@ -352,25 +358,37 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
 -- | Makes a line of decorations below the source.
 foldDecorations
-    :: (Column -> Bool -> [Pointer] -> TB.Builder) -- ^ Catch up from the previous pointer to this pointer.
-    -> (Column -> (Int, TB.Builder))               -- ^ Something in the middle that ends before the next pointer.
+    :: (Int -> Bool -> [Pointer] -> T.Text -> TB.Builder)
+    {- ^ Catch up from the previous pointer to this pointer.
+
+    @catchUp distance isFirst pointers text@ should return text of at least length @distance@.
+    -}
+    -> (Int -> T.Text -> (Int, TB.Builder))
+    {- ^ Add text underneath the pointer before the next pointer.
+
+    @underlinePointer pointerLen text@ should return the text and its length.
+    -}
     -> [Pointer]
+    -> T.Text
     -> (TB.Builder, Column)
-foldDecorations catchUp reachAfter ps =
-    let (decor, finalCol, _) = paral
-            (\(rest, (xs, c, isFirst)) p@(Pointer {..}) ->
-                let (afterLen, afterText) = reachAfter (pointerColEnd - pointerColStart)
+foldDecorations catchUp underlinePointer ps line =
+    let (decor, finalCol, _, _) = paral
+            (\(rest, (xs, c, isFirst, remainingLine)) p@(Pointer {..}) ->
+                let (textBefore, textUnderAndRest) = T.splitAt (pointerColStart - c) remainingLine
+                    (textUnder, textRest) = T.splitAt (pointerColEnd - pointerColStart) textUnderAndRest
+                    (afterLen, afterText) = underlinePointer (pointerColEnd - pointerColStart) textUnder
                 in
                 ( mconcat
                     [ xs
-                    , catchUp (pointerColStart - c) isFirst (p:rest)
+                    , catchUp (pointerColStart - c) isFirst (p:rest) textBefore
                     , afterText
                     ]
                 , pointerColStart + afterLen
                 , False
+                , textRest
                 )
             )
-            ("", 1, True)
+            ("", 1, True, line)
             ps
     in (decor, finalCol)
 
@@ -391,3 +409,67 @@ unsplit a (x:xs) = foldl' (\acc y -> acc <> a <> y) x xs
 replicateB :: Int -> T.Text -> TB.Builder
 replicateB n xs = TB.fromText (T.replicate n xs)
 {-# INLINE replicateB #-}
+
+{- | Replaces each character in the text with the appropriate instances of the given text based on character width.
+
+The result will also be right-padded with the given text to the given length.
+
+For tabs, the tab width given is used to make it equivalent to that many spaces.
+-}
+replaceWithWidth :: Int -> Int -> T.Text -> T.Text -> TB.Builder
+replaceWithWidth len tab ref xs = T.foldl' (\acc c -> acc <> replicateB (width c) xs) "" ref <> replicateB (len - T.length ref) xs
+    where
+        width '\t' = tab
+        width c = charWidth c
+{-# INLINE replaceWithWidth #-}
+
+{-| Get the designated render width of a character: 0 for a combining character, 1 for a regular character,
+2 for a wide character. (Wide characters are rendered as exactly double width in apps and fonts that support it.)
+
+(From Pandoc.)
+-}
+charWidth :: Char -> Int
+charWidth c = if
+    | c < '\x0300'                     -> 1
+    | c >= '\x0300' && c <= '\x036F'   -> 0
+    -- Combining
+    | c >= '\x0370' && c <= '\x10FC'   -> 1
+    | c >= '\x1100' && c <= '\x115F'   -> 2
+    | c >= '\x1160' && c <= '\x11A2'   -> 1
+    | c >= '\x11A3' && c <= '\x11A7'   -> 2
+    | c >= '\x11A8' && c <= '\x11F9'   -> 1
+    | c >= '\x11FA' && c <= '\x11FF'   -> 2
+    | c >= '\x1200' && c <= '\x2328'   -> 1
+    | c >= '\x2329' && c <= '\x232A'   -> 2
+    | c >= '\x232B' && c <= '\x2E31'   -> 1
+    | c >= '\x2E80' && c <= '\x303E'   -> 2
+    | c == '\x303F'                    -> 1
+    | c >= '\x3041' && c <= '\x3247'   -> 2
+    | c >= '\x3248' && c <= '\x324F'   -> 1
+    -- Ambiguous
+    | c >= '\x3250' && c <= '\x4DBF'   -> 2
+    | c >= '\x4DC0' && c <= '\x4DFF'   -> 1
+    | c >= '\x4E00' && c <= '\xA4C6'   -> 2
+    | c >= '\xA4D0' && c <= '\xA95F'   -> 1
+    | c >= '\xA960' && c <= '\xA97C'   -> 2
+    | c >= '\xA980' && c <= '\xABF9'   -> 1
+    | c >= '\xAC00' && c <= '\xD7FB'   -> 2
+    | c >= '\xD800' && c <= '\xDFFF'   -> 1
+    | c >= '\xE000' && c <= '\xF8FF'   -> 1
+    -- Ambiguous
+    | c >= '\xF900' && c <= '\xFAFF'   -> 2
+    | c >= '\xFB00' && c <= '\xFDFD'   -> 1
+    | c >= '\xFE00' && c <= '\xFE0F'   -> 1
+    -- Ambiguous
+    | c >= '\xFE10' && c <= '\xFE19'   -> 2
+    | c >= '\xFE20' && c <= '\xFE26'   -> 1
+    | c >= '\xFE30' && c <= '\xFE6B'   -> 2
+    | c >= '\xFE70' && c <= '\xFEFF'   -> 1
+    | c >= '\xFF01' && c <= '\xFF60'   -> 2
+    | c >= '\xFF61' && c <= '\x16A38'  -> 1
+    | c >= '\x1B000' && c <= '\x1B001' -> 2
+    | c >= '\x1D000' && c <= '\x1F1FF' -> 1
+    | c >= '\x1F200' && c <= '\x1F251' -> 2
+    | c >= '\x1F300' && c <= '\x1F773' -> 1
+    | c >= '\x20000' && c <= '\x3FFFD' -> 2
+    | otherwise                        -> 1

@@ -166,6 +166,11 @@ data Style = Style
 
       This should visually be one character.
       -}
+    , styleTabWidth :: Int
+      {- ^ The number of spaces a tab character is equivalent to.
+
+      Your source will have tabs replaced with this many spaces.
+      -}
     }
 
 -- | Adds highlighting to spans of text by enclosing it with some text e.g ANSI escape codes.

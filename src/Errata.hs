@@ -195,6 +195,7 @@ basicStyle = Style
     , styleDownRight = " "
     , styleUpRight = "|"
     , styleUpDownRight = "|"
+    , styleTabWidth = 4
     }
 
 {- | A fancy style using Unicode characters.
@@ -234,6 +235,7 @@ fancyStyle = Style
     , styleDownRight = "┌"
     , styleUpDownRight = "├"
     , styleUpRight = "└"
+    , styleTabWidth = 4
     }
 
 -- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored red.
@@ -252,6 +254,7 @@ fancyRedStyle = Style
     , styleDownRight = "\x1b[31m┌\x1b[0m"
     , styleUpDownRight = "\x1b[31m├\x1b[0m"
     , styleUpRight = "\x1b[31m└\x1b[0m"
+    , styleTabWidth = 4
     }
 
 -- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored yellow.
@@ -270,6 +273,7 @@ fancyYellowStyle = Style
     , styleDownRight = "\x1b[33m┌\x1b[0m"
     , styleUpRight = "\x1b[33m└\x1b[0m"
     , styleUpDownRight = "\x1b[33m├\x1b[0m"
+    , styleTabWidth = 4
     }
 
 {- | Pretty prints errors. The original source is required. Returns 'Data.Text.Lazy.Text' (lazy). If the list is empty,

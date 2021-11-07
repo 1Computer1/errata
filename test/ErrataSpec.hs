@@ -264,6 +264,40 @@ goldenTests = do
             Nothing
         ]
 
+    golden
+        "T022"
+        "foo\n\tbar"
+        [ adhoc
+            [ Pointer 2 2 3 False Nothing
+            ]
+        ]
+
+    golden
+        "T023"
+        "こんにちは、日本語です"
+        [ adhoc
+            [ Pointer 1 1 6 False Nothing
+            ]
+        ]
+
+    golden
+        "T024"
+        "jalapeño poppers"
+        [ adhoc
+            [ Pointer 1 2 4 False Nothing
+            , Pointer 1 7 9 False Nothing
+            , Pointer 1 12 14 False Nothing
+            ]
+        ]
+
+    golden
+        "T025"
+        "bar\t\t\t.foo"
+        [ adhoc
+            [ Pointer 1 1 11 False Nothing
+            ]
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
