@@ -6,6 +6,8 @@
 
 * Add support for characters with different widths (fullwidth, combining characters, tabs). Includes `styleTabWidth` option (defaults to 4).
 
+* Fixed trailing whitespace in the omission line.
+
 ## 0.3.0.0
 
 * Support GHC 9.0.1 (and eventually 9.2).
