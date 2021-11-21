@@ -174,11 +174,6 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
             [ replicateB padding " ", " ", TB.fromText styleLinePrefix, " "
             ]
 
-        -- Prefix for omitting lines when spanning many lines.
-        omitPrefix = mconcat
-            [ TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix, " "
-            ]
-
         -- Prefix with a line number.
         linePrefix :: Line -> TB.Builder
         linePrefix n = mconcat
@@ -251,7 +246,14 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
                             | otherwise          -> ""
-                    in (omitPrefix <> mid) : (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
+                        -- Prefix for omitting lines when spanning many lines.
+                        omitPrefixAndMid = mconcat
+                            [ TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix
+                            , if
+                                | snd (connAround n) -> " " <> TB.fromText styleVertical
+                                | otherwise          -> ""
+                            ]
+                    in omitPrefixAndMid : (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
 
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.

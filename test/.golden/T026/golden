@@ -1,0 +1,12 @@
+an error
+--> here:1:1
+  |
+1 | l1
+  | ^^
+2 | l2
+3 | l3
+. |
+6 | l6
+7 | l7
+  | ^^
+an error occurred here
