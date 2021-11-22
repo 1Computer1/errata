@@ -4,7 +4,7 @@
 module Main
     where
 
-import           Data.List
+import           Data.List (intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.IO as TL
 import           Errata
