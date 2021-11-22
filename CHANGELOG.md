@@ -4,7 +4,9 @@
 
 ## Unreleased (0.4.0.0)
 
-* Add support for characters with different widths (fullwidth, combining characters, tabs). Includes `styleTabWidth` option (defaults to 4).
+* Added support for characters with different widths (full-width, combining characters, others). The cabal flag `usewcwidth` (default false) can be enabled to use the native `wcwidth` function.
+
+* Added support for replacing tabs with spaces with the `styleTabWidth` option (defaults to 4).
 
 * Fixed trailing whitespace in the omission line.
 

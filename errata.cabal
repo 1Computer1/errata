@@ -29,6 +29,10 @@ source-repository head
   type:     git
   location: https://github.com/1Computer1/errata.git
 
+flag usewcwidth
+  description: Enable the use of wcwidth for character widths. If disabled, uses an incomplete premade version.
+  default: False
+
 common common-options
   build-depends:
       base >= 4.12 && < 4.17
@@ -53,6 +57,8 @@ library
       Errata.Internal.Render
       Errata.Source
       Errata.Types
+  if flag(usewcwidth)
+    cpp-options: -Dusewcwidth
 
 test-suite errata-test
   import:         common-options

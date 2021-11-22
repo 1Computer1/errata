@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -35,6 +36,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TB
 import           Errata.Source
 import           Errata.Types
+
+#if defined(usewcwidth)
+import           Foreign.C
+#endif
 
 -- | Renders a collection of 'Errata'.
 renderErrors :: Source source => source -> [Errata] -> TB.Builder
@@ -428,6 +433,16 @@ replaceWithWidth len tab ref xs = T.foldl' (\acc c -> acc <> replicateB (width c
         width c = charWidth c
 {-# INLINE replaceWithWidth #-}
 
+#if defined(usewcwidth)
+foreign import ccall unsafe "wchar.h wcwidth" wcwidth :: CWchar -> CInt
+{-| Get the designated render width of a character, based on the native wcwidth.
+Where wcwidth would return -1, 0 is returned instead.
+
+The result will depend on the current locale and Unicode version.
+-}
+charWidth :: Char -> Int
+charWidth = max 0 . fromEnum . wcwidth . toEnum . fromEnum
+#else
 {-| Get the designated render width of a character: 0 for a combining character, 1 for a regular character,
 2 for a wide character. (Wide characters are rendered as exactly double width in apps and fonts that support it.)
 
@@ -478,3 +493,4 @@ charWidth c = if
     | c >= '\x1F300' && c <= '\x1F773' -> 1
     | c >= '\x20000' && c <= '\x3FFFD' -> 2
     | otherwise                        -> 1
+#endif
