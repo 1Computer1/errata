@@ -29,10 +29,10 @@ module Errata.Types
 
 import qualified Data.Text as T
 
--- | Line number, starts at 1.
+-- | Line number, starts at 1, increments every new line character.
 type Line = Int
 
--- | Column number, starts at 1.
+-- | Column number, starts at 1, increments every 'Char'.
 type Column = Int
 
 -- | Header text. Generally goes above things.
