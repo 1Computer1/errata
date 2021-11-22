@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module      : Errata.Source
@@ -20,11 +21,11 @@ import qualified Data.Text.Lazy as TL
 {- | A class for manipulating and converting source text.
 
 For @ByteString@ source types, you should convert it to one of the built-in instances with your encoding of choice.
-
-Every @Source@ must be a 'Monoid' to allow for a 'mempty' which will be used as a source line when a pointer references
-an out-of-bounds line.
 -}
-class Monoid s => Source s where
+class Source s where
+    -- | The empty source, used when a pointer references an out-of-bounds line.
+    emptySource :: s
+
     -- | Splits the source into lines.
     sourceToLines :: s -> [s]
 
@@ -32,13 +33,16 @@ class Monoid s => Source s where
     sourceToText :: s -> T.Text
 
 instance Source String where
+    emptySource = ""
     sourceToLines = lines
     sourceToText = T.pack
 
 instance Source T.Text where
+    emptySource = ""
     sourceToLines = T.lines
     sourceToText = id
 
 instance Source TL.Text where
+    emptySource = ""
     sourceToLines = TL.lines
     sourceToText = TL.toStrict

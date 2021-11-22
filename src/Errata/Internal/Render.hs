@@ -28,7 +28,7 @@ module Errata.Internal.Render
     , makeSourceTable
     ) where
 
-import           Control.Applicative (ZipList(..))
+import           Control.Applicative (ZipList (..))
 import qualified Data.IntMap as I
 import           Data.List (foldl', inits, sortOn)
 import           Data.Maybe (isJust)
@@ -94,18 +94,18 @@ groupBlockPointers :: Block -> I.IntMap [Pointer]
 groupBlockPointers = I.fromListWith (<>) . map (\p -> (pointerLine p, pure p)) . blockPointers
 
 -- | Create a source table from the given line span and source lines.
-makeSourceTable :: Monoid a => Line -> Line -> [a] -> I.IntMap [a]
+makeSourceTable :: Source a => Line -> Line -> [a] -> I.IntMap [a]
 makeSourceTable minLine maxLine slines = I.fromDistinctAscList $
     zip [minLine .. maxLine] (drop (minLine - 1) (slices slines))
 
 {- | Turns a list into a list of tail slices of the original list, with each element at index @i@ dropping
-the first @i@ elements of the original list and tailing a 'mempty'.
+the first @i@ elements of the original list and tailing an 'emptySource'.
 
 This allows for correct behavior on out-of-source-bounds pointers.
 -}
-slices :: Monoid a => [a] -> [[a]]
-slices [] = repeat (repeat mempty)
-slices xs = (xs <> repeat mempty) : slices (tail xs)
+slices :: Source a => [a] -> [[a]]
+slices [] = repeat (repeat emptySource)
+slices xs = (xs <> repeat emptySource) : slices (tail xs)
 
 -- | Renders a single 'Errata'.
 renderErrata

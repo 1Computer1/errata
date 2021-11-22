@@ -8,6 +8,8 @@
 
 * Added support for replacing tabs with spaces with the `styleTabWidth` option (defaults to 4).
 
+* Changed `Monoid` constraint of `Source` to just requiring an `emptySource` value.
+
 * Fixed trailing whitespace in the omission line.
 
 ## 0.3.0.0
