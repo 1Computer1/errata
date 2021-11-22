@@ -87,9 +87,30 @@ ifExample = TL.putStrLn $ prettyErrors @String
         (Just "\n\x1b[33mnote: use --explain E001 to learn more\x1b[0m")
     ]
 
+-- | From the documentation for premade styles.
+stylesExample :: Style -> IO ()
+stylesExample style = TL.putStrLn $ prettyErrors @String
+    "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+    [ Errata
+        (Just "error header message")
+        [ Block
+            style
+            ("file.ext", 1, 16)
+            (Just "block header message")
+            [ Pointer 1 16 18 True (Just "start label")
+            , Pointer 2 6 7 False (Just "unconnected label")
+            , Pointer 3 6 7 True (Just "middle label")
+            , Pointer 8 6 7 True (Just "inner label")
+            , Pointer 8 12 15 True (Just "end label")
+            ]
+            (Just "block body message")
+        ]
+        (Just "error body message")
+    ]
+
 main :: IO ()
 main = sequence_ . intersperse (putStrLn "") $
     [ jsonExample
     , foldExample
     , ifExample
-    ]
+    ] <> map (stylesExample $) [basicStyle, fancyStyle, fancyRedStyle, fancyYellowStyle]

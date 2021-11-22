@@ -173,9 +173,12 @@ Errors should look like so:
 > 2 | | line 2
 >   | |      ^ unconnected label
 > 3 | | line 3
-> . | |______^ middle label
-> 6 | | line 6
-> 7 | | line 7 baz end
+>   | |______^ middle label
+> 4 | | line 4
+> 5 | | line 5
+> . | |
+> 7 | | line 7
+> 8 | | line 8 baz end
 >   | |______^_____^^^ end label
 >   |        |
 >   |        | inner label
@@ -211,14 +214,15 @@ Errors should look like so:
 > 2 │ │ line 2
 >   │ │      ^ unconnected label
 > 3 │ │ line 3
-> . │ ├──────^ middle label
-> 6 │ │ line 6
-> 7 │ │ line 7 baz end
+>   │ ├──────^ middle label
+> 4 │ │ line 4
+> 5 │ │ line 5
+> . │ │
+> 7 │ │ line 7
+> 8 │ │ line 8 baz end
 >   │ └──────^─────^^^ end label
 >   │        │
 >   │        └ inner label
-> block body message
-> error body message
 -}
 fancyStyle :: Style
 fancyStyle = Style

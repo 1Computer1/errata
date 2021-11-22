@@ -316,6 +316,35 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T028"
+        "l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8"
+        [ adhoc
+            [ Pointer 1 1 3 True (Just "label")
+            , Pointer 7 1 3 True Nothing
+            ]
+        ]
+
+    golden
+        "T029"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                basicStyle
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label")
+                , Pointer 2 6 7 False (Just "unconnected label")
+                , Pointer 3 6 7 True (Just "middle label")
+                , Pointer 8 6 7 True (Just "inner label")
+                , Pointer 8 12 15 True (Just "end label")
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
