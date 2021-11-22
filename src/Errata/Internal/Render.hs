@@ -160,8 +160,27 @@ renderSourceLines
     -> I.IntMap [Pointer] -- ^ The pointers of this block grouped by line.
     -> Maybe (TB.Builder)
 renderSourceLines _ _ _ (I.null -> True) = Nothing
-renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "\n" sourceLines
+renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "\n" decoratedLines
     where
+        {- Terminology used in this code:
+            ↓↓ gutter
+          │
+        1 │   line 1 foo bar do
+          │ ┌────────^───────^^
+          │ │        │ ← connector
+          │ │ hook → └ hi ← label
+        2 │ │ line 2
+        3 │ │ line 3
+          │ ├──────^
+        4 │ │ line 4 ← extra line
+        5 │ │ line 5 ← extra line
+        . │ │ ← omission
+        7 │ │ line 7 ← extra line
+        8 │ │ line 8 baz end
+          │ └──────^─────^^^ ← underline
+        ↑↑↑↑        ↑↑↑↑↑
+        prefix      catch up
+        -}
         Style {..} = blockStyle
 
         -- Shows a line in accordance to the style.
@@ -169,24 +188,20 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         showLine :: [(Column, Column)] -> source -> TB.Builder
         showLine hs = TB.fromText . T.replace "\t" (T.replicate styleTabWidth " ") . styleLine hs . sourceToText
 
-        -- Generic prefix without line number.
-        prefix = mconcat
-            [ replicateB padding " ", " ", TB.fromText styleLinePrefix, " "
-            ]
+        -- Generic prefix without line number, used for non-source lines i.e. decorations.
+        prefix :: TB.Builder
+        prefix = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix, " "]
 
-        -- Prefix with a line number.
+        -- Prefix with a line number, used for source lines.
         linePrefix :: Line -> TB.Builder
-        linePrefix n = mconcat
-            [ TB.fromText (styleNumber n), replicateB (padding - length (show n)) " ", " "
-            , TB.fromText styleLinePrefix, " "
-            ]
+        linePrefix n = mconcat [TB.fromText (styleNumber n), replicateB (padding - length (show n)) " ", " ", TB.fromText styleLinePrefix, " "]
 
-        -- The resulting source lines.
-        -- Extra prefix for padding.
-        sourceLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
-            : makeSourceLines 0 slines
+        -- The resulting source lines with decorations; extra prefix included for padding.
+        decoratedLines :: [TB.Builder]
+        decoratedLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix] : makeDecoratedLines 0 slines
 
-        -- Whether there will be a multiline span.
+        -- Whether there will be a multiline span in the block.
+        hasConnMulti :: Bool
         hasConnMulti = I.size (I.filter (any pointerConnect) pointersGrouped) > 1
 
         -- Whether line /n/ has a connection to somewhere else (including the same line).
@@ -199,76 +214,66 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
             let (a, b) = I.split n pointersGrouped
             in ((any . any) pointerConnect a, (any . any) pointerConnect b)
 
-        -- Makes the source lines.
+        -- Decorates all the pointed-to source lines, along with extra lines.
         -- We have an @extra@ parameter to keep track of extra lines when spanning multiple lines.
-        makeSourceLines :: Line -> [(Line, source)] -> [TB.Builder]
-
+        makeDecoratedLines :: Line -> [(Line, source)] -> [TB.Builder]
         -- No lines left.
-        makeSourceLines _ [] = []
-
+        makeDecoratedLines _ [] = []
         -- The next line is a line we have to decorate with pointers.
-        makeSourceLines _ (pr@(n, _):ns)
-            | Just p <- I.lookup n pointersGrouped = makeDecoratedLines p pr <> makeSourceLines 0 ns
-
+        makeDecoratedLines _ (pr@(n, _):ls)
+            | Just p <- I.lookup n pointersGrouped = decorateLine p pr <> makeDecoratedLines 0 ls
         -- The next line is an extra line, within a limit (currently 2, may be configurable later).
-        makeSourceLines extra ((n, l):ns)
+        makeDecoratedLines extra ((n, l):ls)
             | extra < 2 =
                 let mid = if
                         | snd (connAround n) -> TB.fromText styleVertical <> " "
                         | hasConnMulti       -> "  "
                         | otherwise          -> ""
-                in (linePrefix n <> mid <> showLine [] l) : makeSourceLines (extra + 1) ns
-
+                in (linePrefix n <> mid <> showLine [] l) : makeDecoratedLines (extra + 1) ls
         -- We reached the extra line limit, so now there's some logic to figure out what's next.
-        makeSourceLines _ ns =
-            let (es, ns') = break ((`I.member` pointersGrouped) . fst) ns
-            in case (es, ns') of
+        makeDecoratedLines _ ls =
+            let (es, ls') = break ((`I.member` pointersGrouped) . fst) ls
+            in case (es, ls') of
                 -- There were no lines left to decorate anyways.
                 (_, []) -> []
-
                 -- There are lines left to decorate, and it came right after.
-                ([], _) -> makeSourceLines 0 ns'
-
+                ([], _) -> makeDecoratedLines 0 ls'
                 -- There is a single extra line, so we can use that as the before-line.
                 -- No need for omission, because it came right before.
                 ([(n, l)], _) ->
-                    let mid = if
+                    let gutter = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
                             | otherwise          -> ""
-                    in (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
-
+                    in (linePrefix n <> gutter <> showLine [] l) : makeDecoratedLines 0 ls'
                 -- There are more than one line in between, so we omit all but the last.
                 -- We use the last one as the before-line.
                 (_, _) ->
                     let (n, l) = last es
-                        mid = if
+                        gutter = if
                             | snd (connAround n) -> TB.fromText styleVertical <> " "
                             | hasConnMulti       -> "  "
                             | otherwise          -> ""
-                        -- Prefix for omitting lines when spanning many lines.
-                        omitPrefixAndMid = mconcat
-                            [ TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix
-                            , if
-                                | snd (connAround n) -> " " <> TB.fromText styleVertical
-                                | otherwise          -> ""
-                            ]
-                    in omitPrefixAndMid : (linePrefix n <> mid <> showLine [] l) : makeSourceLines 0 ns'
+                        -- Prefix and gutter for omitting lines when spanning many lines.
+                        omitPrefix = mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
+                        omitGutter = if
+                            | snd (connAround n) -> " " <> TB.fromText styleVertical
+                            | otherwise          -> ""
+                    in (omitPrefix <> omitGutter) : (linePrefix n <> gutter <> showLine [] l) : makeDecoratedLines 0 ls'
 
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
-        makeDecoratedLines :: [Pointer] -> (Line, source) -> [TB.Builder]
-        makeDecoratedLines pointers (num, line) =
-            (linePrefix num <> TB.fromText lineConnector <> sline) : decorationLines
+        decorateLine :: [Pointer] -> (Line, source) -> [TB.Builder]
+        decorateLine pointers (n, l) = (linePrefix n <> gutter <> stylizedLine) : decorationLines
             where
-                lineConnector = if
-                    | hasConnBefore && hasConnUnder -> styleVertical <> " "
+                gutter = if
+                    | hasConnBefore && hasConnUnder -> TB.fromText styleVertical <> " "
                     | hasConnMulti                  -> "  "
                     | otherwise                     -> ""
 
                 -- Shortcuts to where this line connects to.
-                hasConnHere = hasConn num
-                (hasConnBefore, hasConnAfter) = connAround num
+                hasConnHere = hasConn n
+                (hasConnBefore, hasConnAfter) = connAround n
                 hasConnAround = hasConnBefore || hasConnAfter
                 hasConnOver = hasConnHere || hasConnBefore
                 hasConnUnder = hasConnHere || hasConnAfter
@@ -277,19 +282,17 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 pointersSorted = sortOn pointerColumns pointers
 
                 -- The actual source line.
-                lineText = sourceToText line
+                sourceLine = sourceToText l
 
-                -- The line number we're on.
-                sline = showLine (map pointerColumns pointersSorted) line
+                -- The source line stylized.
+                stylizedLine = showLine (map pointerColumns pointersSorted) l
 
                 -- The resulting decoration lines.
                 decorationLines = case filter (isJust . pointerLabel) (init pointersSorted) of
                     -- There's only one pointer, so no need for more than just an underline and label.
                     _ | length pointersSorted == 1 -> [underline pointersSorted]
-
                     -- There's no labels at all, so we just need the underline.
                     [] -> [underline pointersSorted]
-
                     -- Otherwise, we have three steps to do:
                     -- The underline directly underneath.
                     -- An extra connector for the labels other than the rightmost one.
@@ -302,47 +305,47 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 underline :: [Pointer] -> TB.Builder
                 underline ps =
                     let (decor, _) = foldDecorations
-                            (\n isFirst rest text -> if
-                                | isFirst && any pointerConnect rest && hasConnAround -> replaceWithWidth n styleTabWidth text styleHorizontal
-                                | isFirst                                             -> replaceWithWidth n styleTabWidth text " "
-                                | any pointerConnect rest                             -> replaceWithWidth n styleTabWidth text styleHorizontal
-                                | otherwise                                           -> replaceWithWidth n styleTabWidth text " "
+                            (\k isFirst rest text -> if
+                                | isFirst && any pointerConnect rest && hasConnAround -> replaceWithWidth k styleTabWidth text styleHorizontal
+                                | isFirst                                             -> replaceWithWidth k styleTabWidth text " "
+                                | any pointerConnect rest                             -> replaceWithWidth k styleTabWidth text styleHorizontal
+                                | otherwise                                           -> replaceWithWidth k styleTabWidth text " "
                             )
-                            (\n text -> (n, replaceWithWidth n styleTabWidth text styleUnderline))
+                            (\k text -> (k, replaceWithWidth k styleTabWidth text styleUnderline))
                             ps
-                            lineText
+                            sourceLine
                         lbl = maybe "" (" " <>) . pointerLabel $ last ps
-                        mid = if
+                        decorGutter = if
                             | hasConnHere && hasConnBefore && hasConnAfter -> styleUpDownRight <> styleHorizontal
                             | hasConnHere && hasConnBefore                 -> styleUpRight <> styleHorizontal
                             | hasConnHere && hasConnAfter                  -> styleDownRight <> styleHorizontal
                             | hasConnBefore && hasConnAfter                -> styleVertical <> " "
                             | hasConnMulti                                 -> "  "
                             | otherwise                                    -> ""
-                    in prefix <> TB.fromText mid <> decor <> TB.fromText lbl
+                    in prefix <> TB.fromText decorGutter <> decor <> TB.fromText lbl
 
                 -- Create connectors underneath. No labels are rendered here.
                 connectors :: [Pointer] -> TB.Builder
                 connectors ps =
                     let (decor, _) = foldDecorations
-                            (\n _ _ text -> replaceWithWidth n styleTabWidth text " ")
+                            (\k _ _ text -> replaceWithWidth k styleTabWidth text " ")
                             (\_ _ -> (1, TB.fromText styleVertical))
                             ps
-                            lineText
-                        mid = if
+                            sourceLine
+                        decorGutter = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
                             | hasConnMulti                -> "  "
                             | otherwise                   -> ""
-                    in prefix <> TB.fromText mid <> decor
+                    in prefix <> TB.fromText decorGutter <> decor
 
                 -- Create connectors and labels underneath. The last pointer can have a label on this line.
                 connectorAndLabel :: [Pointer] -> TB.Builder
                 connectorAndLabel ps =
                     let (decor, finalCol) = foldDecorations
-                            (\n _ _ text -> replaceWithWidth n styleTabWidth text " ")
+                            (\k _ _ text -> replaceWithWidth k styleTabWidth text " ")
                             (\_ _ -> (1, TB.fromText styleVertical))
                             (init ps)
-                            lineText
+                            sourceLine
                         lbl = maybe ""
                             (\x -> mconcat
                                 [ replicateB (pointerColStart (last ps) - finalCol) " "
@@ -352,11 +355,11 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                                 ]
                             )
                             (pointerLabel (last ps))
-                        mid = if
+                        decorGutter = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
                             | hasConnMulti                -> "  "
                             | otherwise                   -> ""
-                    in prefix <> TB.fromText mid <> decor <> lbl
+                    in prefix <> TB.fromText decorGutter <> decor <> lbl
 
 -- | Makes a line of decorations below the source.
 foldDecorations
@@ -433,8 +436,8 @@ replaceWithWidth len tab ref xs = T.foldl' (\acc c -> acc <> replicateB (width c
 charWidth :: Char -> Int
 charWidth c = if
     | c < '\x0300'                     -> 1
-    | c >= '\x0300' && c <= '\x036F'   -> 0
     -- Combining
+    | c >= '\x0300' && c <= '\x036F'   -> 0
     | c >= '\x0370' && c <= '\x10FC'   -> 1
     | c >= '\x1100' && c <= '\x115F'   -> 2
     | c >= '\x1160' && c <= '\x11A2'   -> 1
@@ -447,8 +450,8 @@ charWidth c = if
     | c >= '\x2E80' && c <= '\x303E'   -> 2
     | c == '\x303F'                    -> 1
     | c >= '\x3041' && c <= '\x3247'   -> 2
-    | c >= '\x3248' && c <= '\x324F'   -> 1
     -- Ambiguous
+    | c >= '\x3248' && c <= '\x324F'   -> 1
     | c >= '\x3250' && c <= '\x4DBF'   -> 2
     | c >= '\x4DC0' && c <= '\x4DFF'   -> 1
     | c >= '\x4E00' && c <= '\xA4C6'   -> 2
@@ -457,12 +460,12 @@ charWidth c = if
     | c >= '\xA980' && c <= '\xABF9'   -> 1
     | c >= '\xAC00' && c <= '\xD7FB'   -> 2
     | c >= '\xD800' && c <= '\xDFFF'   -> 1
-    | c >= '\xE000' && c <= '\xF8FF'   -> 1
     -- Ambiguous
+    | c >= '\xE000' && c <= '\xF8FF'   -> 1
     | c >= '\xF900' && c <= '\xFAFF'   -> 2
     | c >= '\xFB00' && c <= '\xFDFD'   -> 1
-    | c >= '\xFE00' && c <= '\xFE0F'   -> 1
     -- Ambiguous
+    | c >= '\xFE00' && c <= '\xFE0F'   -> 1
     | c >= '\xFE10' && c <= '\xFE19'   -> 2
     | c >= '\xFE20' && c <= '\xFE26'   -> 1
     | c >= '\xFE30' && c <= '\xFE6B'   -> 2
