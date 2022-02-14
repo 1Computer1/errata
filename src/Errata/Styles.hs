@@ -21,6 +21,7 @@ module Errata.Styles
     , fancyYellowPointer
     ) where
 
+import           Data.Bifunctor (bimap, second)
 import qualified Data.Text as T
 import           Errata.Types
 
@@ -175,3 +176,18 @@ fancyYellowPointer = PointerStyle
     , styleHook = "\x1b[33m└\x1b[0m"
     , styleConnector = "\x1b[33m│\x1b[0m"
     }
+
+-- | Adds highlighting to spans of text by modifying it with the given styles' highlights.
+highlight
+    :: [(PointerStyle, (Column, Column))] -- ^ Styles and columns to work on. These are sorted, starting at 1. They must not overlap.
+    -> T.Text                             -- ^ Text to highlight.
+    -> T.Text
+highlight [] xs = xs
+highlight ((p, (s, e)):ps) xs =
+    let (pre, xs') = T.splitAt (s - 1) xs
+        (txt, xs'') = T.splitAt (e - s) xs'
+        hi = styleHighlight p
+        ps' = second (both (\i -> i - e + 1)) <$> ps
+    in pre <> hi txt <> highlight ps' xs''
+    where
+        both f = bimap f f

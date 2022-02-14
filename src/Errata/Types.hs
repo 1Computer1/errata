@@ -28,11 +28,9 @@ module Errata.Types
       -- * Styling options
     , Style (..)
     , PointerStyle (..)
-    , highlight
     ) where
 
 import qualified Data.Text as T
-import Data.Bifunctor (bimap, second)
 
 -- | Line number, starts at 1, increments every new line character.
 type Line = Int
@@ -204,18 +202,3 @@ data PointerStyle = PointerStyle
     This should visually be one character.
     -}
   }
-
--- | Adds highlighting to spans of text by modifying it with the given styles' highlights.
-highlight
-    :: [(PointerStyle, (Column, Column))] -- ^ Styles and columns to work on. These are sorted, starting at 1. They must not overlap.
-    -> T.Text                             -- ^ Text to highlight.
-    -> T.Text
-highlight [] xs = xs
-highlight ((p, (s, e)):ps) xs =
-    let (pre, xs') = T.splitAt (s - 1) xs
-        (txt, xs'') = T.splitAt (e - s) xs'
-        hi = styleHighlight p
-        ps' = second (both (\i -> i - e + 1)) <$> ps
-    in pre <> hi txt <> highlight ps' xs''
-    where
-        both f = bimap f f
