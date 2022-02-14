@@ -6,11 +6,13 @@
 
 * Added styling individual pointers with `PointerStyle`. This changes how `styleLine` and `highlight` works and moves to `styleUnderline` to `PointerStyle`.
 
-* Moved existing and added new premade styles to `Errata.Styles`. `Errata` no longer exports premade styles.
+* Moved existing and added new premade styles to `Errata.Styles`. `Errata` no longer exports premade styles. Also moved `highlight` to here.
 
 * Added support for characters with different widths (full-width, combining characters, others). The cabal flag `usewcwidth` (default false) can be enabled to use the native `wcwidth` function.
 
 * Added support for replacing tabs with spaces with the `styleTabWidth` option (defaults to 4).
+
+* Added `Show` instances to all the types. Style functions are applied to some sample text.
 
 * Changed `Monoid` constraint of `Source` to just requiring an `emptySource` value.
 
