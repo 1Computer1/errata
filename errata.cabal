@@ -13,7 +13,7 @@ license:       MIT
 license-file:  LICENSE
 author:        comp
 maintainer:    onecomputer00@gmail.com
-copyright:     (c) 2020-2021 comp
+copyright:     (c) 2020- comp
 category:      Pretty Printer
 build-type:    Simple
 extra-doc-files:

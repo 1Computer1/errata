@@ -3,7 +3,7 @@
 
 {- |
 Module      : Errata.Source
-Copyright   : (c) 2020 comp
+Copyright   : (c) 2020- comp
 License     : MIT
 Maintainer  : onecomputer00@gmail.com
 Stability   : stable
