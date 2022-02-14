@@ -4,13 +4,31 @@
 
 ## Unreleased (0.4.0.0)
 
-* Added styling individual pointers with `PointerStyle`. This changes how `styleLine` and `highlight` works and moves to `styleUnderline` to `PointerStyle`.
+* Added styling individual pointers with `PointerStyle` (e.g. characters, highlighting).
+    * This changes how `styleLine` and `highlight` works and moves `styleUnderline` to `PointerStyle`.
 
-* Moved existing and added new premade styles to `Errata.Styles`. `Errata` no longer exports premade styles. Also moved `highlight` to here.
+    * This also adds a `PointerStyle` parameter to the helper functions so e.g. `blockSimple fancyStyle ...` should now be `blockSimple fancyStyle fancyPointer ...`.
+
+    * Crazy example from the tests (you can imagine coloring things differently):
+        ```
+        an error
+        --> here:1:1
+          |
+        1 | abcdefghijk
+          |  ..  ~~  ^^ z
+          |  |   :
+          |  |   2 y
+          |  1 x
+        2 | lmnopqrstuv
+          |     ''' w
+        an error occurred here
+        ```
+
+* Moved existing and added new premade styles to `Errata.Styles`. `Errata` no longer exports premade styles. Also moved `highlight` there.
 
 * Added support for characters with different widths (full-width, combining characters, others). The cabal flag `usewcwidth` (default false) can be enabled to use the native `wcwidth` function.
 
-* Added support for replacing tabs with spaces with the `styleTabWidth` option (defaults to 4).
+* Added support for replacing tabs with spaces with the `styleTabWidth` option in `Style` (defaults to 4).
 
 * Added `Show` instances to all the types. Style functions are applied to some sample text.
 
