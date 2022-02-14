@@ -68,6 +68,7 @@ test-suite errata-test
   main-is:        Spec.hs
   other-modules:
       ErrataSpec
+    , Errata.StylesSpec
     , Errata.TypesSpec
   build-depends:
       errata

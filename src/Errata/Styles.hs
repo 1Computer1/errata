@@ -19,6 +19,7 @@ module Errata.Styles
     , fancyRedPointer
     , fancyYellowStyle
     , fancyYellowPointer
+    , highlight
     ) where
 
 import           Data.Bifunctor (bimap, second)
