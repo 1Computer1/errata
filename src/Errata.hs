@@ -83,8 +83,8 @@ blockSimple style pstyle fp hm (l, cs, ce, lbl) bm = Block
 
 -- | A variant of 'blockSimple' that only points at one column.
 blockSimple'
-    :: Style                               -- ^ The style of the block.
-    -> PointerStyle                        -- ^ The style of the pointer.
+    :: Style                       -- ^ The style of the block.
+    -> PointerStyle                -- ^ The style of the pointer.
     -> FilePath                    -- ^ The filepath.
     -> Maybe Header                -- ^ The header message.
     -> (Line, Column, Maybe Label) -- ^ The line number and column, starting at 1, and a label.
@@ -113,8 +113,8 @@ blockConnected style pstyle fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) bm =
 
 -- | A variant of 'blockConnected' where the pointers point at only one column.
 blockConnected'
-    :: Style                               -- ^ The style of the block.
-    -> PointerStyle                        -- ^ The style of the pointer.
+    :: Style                       -- ^ The style of the block.
+    -> PointerStyle                -- ^ The style of the pointer.
     -> FilePath                    -- ^ The filepath.
     -> Maybe Header                -- ^ The header message.
     -> (Line, Column, Maybe Label) -- ^ The first line number and column, starting at 1, and a label.
@@ -150,8 +150,8 @@ blockMerged style pstyle fp hm (l1, cs1, ce1, lbl1) (l2, cs2, ce2, lbl2) lbl bm 
 
 -- | A variant of 'blockMerged' where the pointers point at only one column.
 blockMerged'
-    :: Style                               -- ^ The style of the block.
-    -> PointerStyle                        -- ^ The style of the pointer.
+    :: Style                       -- ^ The style of the block.
+    -> PointerStyle                -- ^ The style of the pointer.
     -> FilePath                    -- ^ The filepath.
     -> Maybe Header                -- ^ The header message.
     -> (Line, Column, Maybe Label) -- ^ The first line number and column, starting at 1, and a label.

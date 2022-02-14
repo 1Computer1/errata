@@ -27,7 +27,7 @@ import           Errata.Types
 
 {- | A basic style using only ASCII characters.
 
-Errors should look like so:
+Errors should look like so (with 'basicPointer'):
 
 > error header message
 > --> file.ext:1:16
@@ -76,7 +76,7 @@ basicPointer = PointerStyle
 
 {- | A fancy style using Unicode characters.
 
-Errors should look like so:
+Errors should look like so (with 'fancyPointer'):
 
 > error header message
 > → file.ext:1:16

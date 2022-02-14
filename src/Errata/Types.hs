@@ -132,7 +132,7 @@ data Style = Style
       {- ^ Stylize a source line.
 
       The style and the column span (sorted, starting at 1) of the text that is being underlined are given for
-      highlighting purposes (see 'highlight').
+      highlighting purposes (see 'Errata.Styles.highlight').
       They can be ignored for source code highlighting instead, for example.
       The result of this should visually take up the same space as the original line.
       -}
