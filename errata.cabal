@@ -56,6 +56,7 @@ library
       Errata
       Errata.Internal.Render
       Errata.Source
+      Errata.Styles
       Errata.Types
   if flag(usewcwidth)
     cpp-options: -Dusewcwidth

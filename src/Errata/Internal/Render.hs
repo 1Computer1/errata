@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE MultiWayIf          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -29,6 +30,7 @@ module Errata.Internal.Render
     ) where
 
 import           Control.Applicative (ZipList (..))
+import           Control.Arrow ((&&&))
 import qualified Data.IntMap as I
 import           Data.List (foldl', inits, sortOn)
 import           Data.Maybe (isJust)
@@ -190,7 +192,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
         -- Shows a line in accordance to the style.
         -- We might get a line that's out-of-bounds, usually the EOF line, so we can default to empty.
-        showLine :: [(Column, Column)] -> source -> TB.Builder
+        showLine :: [(PointerStyle, (Column, Column))] -> source -> TB.Builder
         showLine hs = TB.fromText . T.replace "\t" (T.replicate styleTabWidth " ") . styleLine hs . sourceToText
 
         -- Generic prefix without line number, used for non-source lines i.e. decorations.
@@ -290,7 +292,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 sourceLine = sourceToText l
 
                 -- The source line stylized.
-                stylizedLine = showLine (map pointerColumns pointersSorted) l
+                stylizedLine = showLine (map (pointerStyle &&& pointerColumns) pointersSorted) l
 
                 -- The resulting decoration lines.
                 decorationLines = case filter (isJust . pointerLabel) (init pointersSorted) of
@@ -316,7 +318,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                                 | any pointerConnect rest                             -> replaceWithWidth k styleTabWidth text styleHorizontal
                                 | otherwise                                           -> replaceWithWidth k styleTabWidth text " "
                             )
-                            (\k text -> (k, replaceWithWidth k styleTabWidth text styleUnderline))
+                            (\k p text ->
+                                let x = styleUnderline (pointerStyle p)
+                                in (k, replaceWithWidth k styleTabWidth text x)
+                            )
                             ps
                             sourceLine
                         lbl = maybe "" (" " <>) . pointerLabel $ last ps
@@ -334,7 +339,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 connectors ps =
                     let (decor, _) = foldDecorations
                             (\k _ _ text -> replaceWithWidth k styleTabWidth text " ")
-                            (\_ _ -> (1, TB.fromText styleVertical))
+                            (\_ p _ ->
+                                let x = styleConnector (pointerStyle p)
+                                in (1, TB.fromText x)
+                            )
                             ps
                             sourceLine
                         decorGutter = if
@@ -348,18 +356,23 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 connectorAndLabel ps =
                     let (decor, finalCol) = foldDecorations
                             (\k _ _ text -> replaceWithWidth k styleTabWidth text " ")
-                            (\_ _ -> (1, TB.fromText styleVertical))
+                            (\_ p _ ->
+                                let x = styleConnector (pointerStyle p)
+                                in (1, TB.fromText x)
+                            )
                             (init ps)
                             sourceLine
+                        pointer = last ps
+                        hook = styleHook (pointerStyle pointer)
                         lbl = maybe ""
                             (\x -> mconcat
-                                [ replicateB (pointerColStart (last ps) - finalCol) " "
-                                , TB.fromText styleUpRight
+                                [ replicateB (pointerColStart pointer - finalCol) " "
+                                , TB.fromText hook
                                 , " "
                                 , TB.fromText x
                                 ]
                             )
-                            (pointerLabel (last ps))
+                            (pointerLabel pointer)
                         decorGutter = if
                             | hasConnOver && hasConnAfter -> styleVertical <> " "
                             | hasConnMulti                -> "  "
@@ -373,10 +386,10 @@ foldDecorations
 
     @catchUp distance isFirst pointers text@ should return text of at least length @distance@.
     -}
-    -> (Int -> T.Text -> (Int, TB.Builder))
+    -> (Int -> Pointer -> T.Text -> (Int, TB.Builder))
     {- ^ Add text underneath the pointer before the next pointer.
 
-    @underlinePointer pointerLen text@ should return the text and its length.
+    @underlinePointer pointerLen pointer text@ should return the text and its length.
     -}
     -> [Pointer]
     -> T.Text
@@ -386,7 +399,7 @@ foldDecorations catchUp underlinePointer ps line =
             (\(rest, (xs, c, isFirst, remainingLine)) p@(Pointer {..}) ->
                 let (textBefore, textUnderAndRest) = T.splitAt (pointerColStart - c) remainingLine
                     (textUnder, textRest) = T.splitAt (pointerColEnd - pointerColStart) textUnderAndRest
-                    (afterLen, afterText) = underlinePointer (pointerColEnd - pointerColStart) textUnder
+                    (afterLen, afterText) = underlinePointer (pointerColEnd - pointerColStart) p textUnder
                 in
                 ( mconcat
                     [ xs

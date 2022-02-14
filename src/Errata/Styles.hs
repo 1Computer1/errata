@@ -1,0 +1,177 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+{- |
+Module      : Errata.Styles
+Copyright   : (c) 2020 comp
+License     : MIT
+Maintainer  : onecomputer00@gmail.com
+Stability   : stable
+Portability : portable
+
+Premade styles for blocks and pointers.
+-}
+module Errata.Styles
+    ( basicStyle
+    , basicPointer
+    , fancyStyle
+    , fancyPointer
+    , fancyRedStyle
+    , fancyRedPointer
+    , fancyYellowStyle
+    , fancyYellowPointer
+    ) where
+
+import qualified Data.Text as T
+import           Errata.Types
+
+{- | A basic style using only ASCII characters.
+
+Errors should look like so:
+
+> error header message
+> --> file.ext:1:16
+> block header message
+>   |
+> 1 |   line 1 foo bar do
+>   |  ________________^^ start label
+> 2 | | line 2
+>   | |      ^ unconnected label
+> 3 | | line 3
+>   | |______^ middle label
+> 4 | | line 4
+> 5 | | line 5
+> . | |
+> 7 | | line 7
+> 8 | | line 8 baz end
+>   | |______^_____^^^ end label
+>   |        |
+>   |        | inner label
+> block body message
+> error body message
+-}
+basicStyle :: Style
+basicStyle = Style
+    { styleLocation = \(fp, l, c) -> T.concat ["--> ", T.pack fp, ":", T.pack $ show l, ":", T.pack $ show c]
+    , styleNumber = T.pack . show
+    , styleLine = highlight
+    , styleEllipsis = "."
+    , styleLinePrefix = "|"
+    , styleVertical = "|"
+    , styleHorizontal = "_"
+    , styleDownRight = " "
+    , styleUpRight = "|"
+    , styleUpDownRight = "|"
+    , styleTabWidth = 4
+    }
+
+-- | Pointers using only ASCII characters.
+basicPointer :: PointerStyle
+basicPointer = PointerStyle
+    { styleHighlight = id
+    , styleUnderline = "^"
+    , styleHook = "|"
+    , styleConnector = "|"
+    }
+
+{- | A fancy style using Unicode characters.
+
+Errors should look like so:
+
+> error header message
+> → file.ext:1:16
+> block header message
+>   │
+> 1 │   line 1 foo bar do
+>   │ ┌────────────────^^ start label
+> 2 │ │ line 2
+>   │ │      ^ unconnected label
+> 3 │ │ line 3
+>   │ ├──────^ middle label
+> 4 │ │ line 4
+> 5 │ │ line 5
+> . │ │
+> 7 │ │ line 7
+> 8 │ │ line 8 baz end
+>   │ └──────^─────^^^ end label
+>   │        │
+>   │        └ inner label
+-}
+fancyStyle :: Style
+fancyStyle = Style
+    { styleLocation = \(fp, l, c) -> T.concat
+        [ "→ ", T.pack fp, ":", T.pack $ show l, ":", T.pack $ show c
+        ]
+    , styleNumber = T.pack . show
+    , styleLine = highlight
+    , styleEllipsis = "."
+    , styleLinePrefix = "│"
+    , styleHorizontal = "─"
+    , styleVertical = "│"
+    , styleDownRight = "┌"
+    , styleUpDownRight = "├"
+    , styleUpRight = "└"
+    , styleTabWidth = 4
+    }
+
+-- | Pointers using Unicode characters and ANSI colors.
+fancyPointer :: PointerStyle
+fancyPointer = PointerStyle
+    { styleHighlight = id
+    , styleUnderline = "^"
+    , styleHook = "└"
+    , styleConnector = "│"
+    }
+
+-- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored red.
+fancyRedStyle :: Style
+fancyRedStyle = Style
+    { styleLocation = \(fp, l, c) -> T.concat
+        [ "\x1b[34m→\x1b[0m ", T.pack fp, ":", T.pack $ show l, ":", T.pack $ show c
+        ]
+    , styleNumber = T.pack . show
+    , styleLine = highlight
+    , styleEllipsis = "."
+    , styleLinePrefix = "\x1b[34m│\x1b[0m"
+    , styleHorizontal = "\x1b[31m─\x1b[0m"
+    , styleVertical = "\x1b[31m│\x1b[0m"
+    , styleDownRight = "\x1b[31m┌\x1b[0m"
+    , styleUpDownRight = "\x1b[31m├\x1b[0m"
+    , styleUpRight = "\x1b[31m└\x1b[0m"
+    , styleTabWidth = 4
+    }
+
+-- | Red pointers using Unicode characters and ANSI colors.
+fancyRedPointer :: PointerStyle
+fancyRedPointer = PointerStyle
+    { styleHighlight = \x -> "\x1b[31m" <> x <> "\x1b[0m"
+    , styleUnderline = "\x1b[31m^\x1b[0m"
+    , styleHook = "\x1b[31m└\x1b[0m"
+    , styleConnector = "\x1b[31m│\x1b[0m"
+    }
+
+-- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored yellow.
+fancyYellowStyle :: Style
+fancyYellowStyle = Style
+    { styleLocation = \(fp, l, c) -> T.concat
+        [ "\x1b[34m→\x1b[0m ", T.pack fp, ":", T.pack $ show l, ":", T.pack $ show c
+        ]
+    , styleNumber = T.pack . show
+    , styleLine = highlight
+    , styleEllipsis = "."
+    , styleLinePrefix = "\x1b[34m│\x1b[0m"
+    , styleHorizontal = "\x1b[33m─\x1b[0m"
+    , styleVertical = "\x1b[33m│\x1b[0m"
+    , styleDownRight = "\x1b[33m┌\x1b[0m"
+    , styleUpRight = "\x1b[33m└\x1b[0m"
+    , styleUpDownRight = "\x1b[33m├\x1b[0m"
+    , styleTabWidth = 4
+    }
+
+-- | Yellow pointers using Unicode characters and ANSI colors.
+fancyYellowPointer :: PointerStyle
+fancyYellowPointer = PointerStyle
+    { styleHighlight = \x -> "\x1b[33m" <> x <> "\x1b[0m"
+    , styleUnderline = "\x1b[33m^\x1b[0m"
+    , styleHook = "\x1b[33m└\x1b[0m"
+    , styleConnector = "\x1b[33m│\x1b[0m"
+    }

@@ -1,0 +1,11 @@
+an error
+--> here:1:1
+  |
+1 | abcdefghijk
+  |  ..  ~~  ^^ z
+  |  |   :
+  |  |   2 y
+  |  1 x
+2 | lmnopqrstuv
+  |     ''' w
+an error occurred here

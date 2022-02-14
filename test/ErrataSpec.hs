@@ -8,6 +8,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 import           Errata
+import           Errata.Styles
+import           Errata.Types
 import           Test.Hspec
 import           Test.Hspec.Golden
 
@@ -15,14 +17,14 @@ spec :: Spec
 spec = do
     describe "blockMerged" $ do
         it "merges pointers on the same line" $
-            let b = blockMerged basicStyle "here" Nothing (1, 1, 2, Just "a") (1, 3, 4, Just "b") (Just "c") Nothing
-                pointers = [Pointer 1 1 4 False (Just "c")]
-            in blockPointers b `shouldBe` pointers
+            let b = blockMerged basicStyle basicPointer "here" Nothing (1, 1, 2, Just "a") (1, 3, 4, Just "b") (Just "c") Nothing
+                pointers = [Pointer 1 1 4 False (Just "c") basicPointer]
+            in pointerData <$> blockPointers b `shouldBe` pointerData <$> pointers
 
         it "does not merge pointers on different line" $
-            let b = blockMerged basicStyle "here" Nothing (1, 1, 2, Just "a") (2, 3, 4, Just "b") (Just "c") Nothing
-                pointers = [Pointer 1 1 2 True (Just "a"), Pointer 2 3 4 True (Just "b")]
-            in blockPointers b `shouldBe` pointers
+            let b = blockMerged basicStyle basicPointer "here" Nothing (1, 1, 2, Just "a") (2, 3, 4, Just "b") (Just "c") Nothing
+                pointers = [Pointer 1 1 2 True (Just "a") basicPointer, Pointer 2 3 4 True (Just "b") basicPointer]
+            in pointerData <$> blockPointers b `shouldBe` pointerData <$> pointers
 
     describe "prettyErrors" goldenTests
 
@@ -37,7 +39,7 @@ goldenTests = do
                 basicStyle
                 ("simple", 1, 1)
                 Nothing
-                [Pointer 1 1 6 False Nothing]
+                [Pointer 1 1 6 False Nothing basicPointer]
                 Nothing
             ]
             Nothing
@@ -52,17 +54,17 @@ goldenTests = do
                 basicStyle
                 ("file.hs", 3, 10)
                 Nothing
-                [ Pointer 2 10 13 False (Just "this has type `Int`")
-                , Pointer 3 10 17 False (Just "but this has type `String`")
+                [ Pointer 2 10 13 False (Just "this has type `Int`") basicPointer
+                , Pointer 3 10 17 False (Just "but this has type `String`") basicPointer
                 ]
                 Nothing
             , Block
                 basicStyle
                 ("file.hs", 1, 7)
                 Nothing
-                [ Pointer 1 7 9 True Nothing
-                , Pointer 2 5 9 True Nothing
-                , Pointer 3 5 9 True (Just "in this `if` expression")
+                [ Pointer 1 7 9 True Nothing basicPointer
+                , Pointer 2 5 9 True Nothing basicPointer
+                , Pointer 3 5 9 True (Just "in this `if` expression") basicPointer
                 ]
                 Nothing
             ]
@@ -78,7 +80,7 @@ goldenTests = do
                 basicStyle
                 ("file.hs", 1, 10)
                 Nothing
-                [Pointer 1 10 14 False Nothing]
+                [Pointer 1 10 14 False Nothing basicPointer]
                 Nothing
             ]
             (Just "\nDid you mean to use one of these?\n\n    foldl\n    foldr")
@@ -88,7 +90,7 @@ goldenTests = do
         "T003"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 2 4 False (Just "label")
+            [ Pointer 1 2 4 False (Just "label") basicPointer
             ]
         ]
 
@@ -96,10 +98,10 @@ goldenTests = do
         "T004"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 2 4 False (Just "x")
-            , Pointer 1 6 8 False (Just "y")
-            , Pointer 1 10 12 False (Just "z")
-            , Pointer 2 5 8 False (Just "w")
+            [ Pointer 1 2 4 False (Just "x") basicPointer
+            , Pointer 1 6 8 False (Just "y") basicPointer
+            , Pointer 1 10 12 False (Just "z") basicPointer
+            , Pointer 2 5 8 False (Just "w") basicPointer
             ]
         ]
 
@@ -107,10 +109,10 @@ goldenTests = do
         "T005"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 2 4 True (Just "x")
-            , Pointer 1 6 8 True (Just "y")
-            , Pointer 1 10 12 True (Just "z")
-            , Pointer 2 5 8 True (Just "w")
+            [ Pointer 1 2 4 True (Just "x") basicPointer
+            , Pointer 1 6 8 True (Just "y") basicPointer
+            , Pointer 1 10 12 True (Just "z") basicPointer
+            , Pointer 2 5 8 True (Just "w") basicPointer
             ]
         ]
 
@@ -118,10 +120,10 @@ goldenTests = do
         "T006"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 2 4 True (Just "x")
-            , Pointer 1 6 8 False (Just "y")
-            , Pointer 1 10 12 True (Just "z")
-            , Pointer 2 5 8 False (Just "w")
+            [ Pointer 1 2 4 True (Just "x") basicPointer
+            , Pointer 1 6 8 False (Just "y") basicPointer
+            , Pointer 1 10 12 True (Just "z") basicPointer
+            , Pointer 2 5 8 False (Just "w") basicPointer
             ]
         ]
 
@@ -129,11 +131,11 @@ goldenTests = do
         "T007"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 2 4 True (Just "x")
-            , Pointer 1 6 8 True Nothing
-            , Pointer 1 10 12 False (Just "z")
-            , Pointer 2 5 8 False (Just "w")
-            , Pointer 3 1 3 True (Just "v")
+            [ Pointer 1 2 4 True (Just "x") basicPointer
+            , Pointer 1 6 8 True Nothing basicPointer
+            , Pointer 1 10 12 False (Just "z") basicPointer
+            , Pointer 2 5 8 False (Just "w") basicPointer
+            , Pointer 3 1 3 True (Just "v") basicPointer
             ]
         ]
 
@@ -149,7 +151,7 @@ goldenTests = do
         "T009"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 4 1 2 False (Just "empty")
+            [ Pointer 4 1 2 False (Just "empty") basicPointer
             ]
         ]
 
@@ -157,7 +159,7 @@ goldenTests = do
         "T010"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 1 False (Just "empty")
+            [ Pointer 1 1 1 False (Just "empty") basicPointer
             ]
         ]
 
@@ -165,7 +167,7 @@ goldenTests = do
         "T011"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 15 16 False (Just "empty")
+            [ Pointer 1 15 16 False (Just "empty") basicPointer
             ]
         ]
 
@@ -173,13 +175,13 @@ goldenTests = do
         "T012"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 2 True (Just "x")
-            , Pointer 1 3 4 True (Just "y")
-            , Pointer 1 5 6 False (Just "z")
-            , Pointer 1 7 8 False (Just "z")
-            , Pointer 1 9 10 False (Just "z")
-            , Pointer 2 5 8 False (Just "w")
-            , Pointer 3 1 3 True (Just "v")
+            [ Pointer 1 1 2 True (Just "x") basicPointer
+            , Pointer 1 3 4 True (Just "y") basicPointer
+            , Pointer 1 5 6 False (Just "z") basicPointer
+            , Pointer 1 7 8 False (Just "z") basicPointer
+            , Pointer 1 9 10 False (Just "z") basicPointer
+            , Pointer 2 5 8 False (Just "w") basicPointer
+            , Pointer 3 1 3 True (Just "v") basicPointer
             ]
         ]
 
@@ -187,12 +189,12 @@ goldenTests = do
         "T013"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 2 True (Just "x")
-            , Pointer 1 3 4 True (Just "y")
-            , Pointer 1 7 8 True Nothing
-            , Pointer 1 9 10 True (Just "z")
-            , Pointer 2 5 8 False (Just "w")
-            , Pointer 3 1 3 True (Just "v")
+            [ Pointer 1 1 2 True (Just "x") basicPointer
+            , Pointer 1 3 4 True (Just "y") basicPointer
+            , Pointer 1 7 8 True Nothing basicPointer
+            , Pointer 1 9 10 True (Just "z") basicPointer
+            , Pointer 2 5 8 False (Just "w") basicPointer
+            , Pointer 3 1 3 True (Just "v") basicPointer
             ]
         ]
 
@@ -200,10 +202,10 @@ goldenTests = do
         "T014"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 4 True (Just "x")
-            , Pointer 1 6 9 True (Just "x")
-            , Pointer 3 1 3 True (Just "y")
-            , Pointer 3 5 7 True (Just "y")
+            [ Pointer 1 1 4 True (Just "x") basicPointer
+            , Pointer 1 6 9 True (Just "x") basicPointer
+            , Pointer 3 1 3 True (Just "y") basicPointer
+            , Pointer 3 5 7 True (Just "y") basicPointer
             ]
         ]
 
@@ -211,9 +213,9 @@ goldenTests = do
         "T015"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 3 False Nothing
-            , Pointer 1 5 6 False Nothing
-            , Pointer 1 7 9 False (Just "x")
+            [ Pointer 1 1 3 False Nothing basicPointer
+            , Pointer 1 5 6 False Nothing basicPointer
+            , Pointer 1 7 9 False (Just "x") basicPointer
             ]
         ]
 
@@ -221,9 +223,9 @@ goldenTests = do
         "T016"
         "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
         [ adhoc
-            [ Pointer 1 1 3 True Nothing
-            , Pointer 1 5 6 True Nothing
-            , Pointer 1 7 9 True (Just "x")
+            [ Pointer 1 1 3 True Nothing basicPointer
+            , Pointer 1 5 6 True Nothing basicPointer
+            , Pointer 1 7 9 True (Just "x") basicPointer
             ]
         ]
 
@@ -268,7 +270,7 @@ goldenTests = do
         "T022"
         "foo\n\tbar"
         [ adhoc
-            [ Pointer 2 2 3 False Nothing
+            [ Pointer 2 2 3 False Nothing basicPointer
             ]
         ]
 
@@ -276,7 +278,7 @@ goldenTests = do
         "T023"
         "こんにちは、日本語です"
         [ adhoc
-            [ Pointer 1 1 6 False Nothing
+            [ Pointer 1 1 6 False Nothing basicPointer
             ]
         ]
 
@@ -284,9 +286,9 @@ goldenTests = do
         "T024"
         "jalapeño poppers"
         [ adhoc
-            [ Pointer 1 2 4 False Nothing
-            , Pointer 1 7 9 False Nothing
-            , Pointer 1 12 14 False Nothing
+            [ Pointer 1 2 4 False Nothing basicPointer
+            , Pointer 1 7 9 False Nothing basicPointer
+            , Pointer 1 12 14 False Nothing basicPointer
             ]
         ]
 
@@ -294,7 +296,7 @@ goldenTests = do
         "T025"
         "bar\t\t\t.foo"
         [ adhoc
-            [ Pointer 1 1 11 False Nothing
+            [ Pointer 1 1 11 False Nothing basicPointer
             ]
         ]
 
@@ -302,8 +304,8 @@ goldenTests = do
         "T026"
         "l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8"
         [ adhoc
-            [ Pointer 1 1 3 False Nothing
-            , Pointer 7 1 3 False Nothing
+            [ Pointer 1 1 3 False Nothing basicPointer
+            , Pointer 7 1 3 False Nothing basicPointer
             ]
         ]
 
@@ -311,8 +313,8 @@ goldenTests = do
         "T027"
         "l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8"
         [ adhoc
-            [ Pointer 1 1 3 True Nothing
-            , Pointer 7 1 3 True Nothing
+            [ Pointer 1 1 3 True Nothing basicPointer
+            , Pointer 7 1 3 True Nothing basicPointer
             ]
         ]
 
@@ -320,8 +322,8 @@ goldenTests = do
         "T028"
         "l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8"
         [ adhoc
-            [ Pointer 1 1 3 True (Just "label")
-            , Pointer 7 1 3 True Nothing
+            [ Pointer 1 1 3 True (Just "label") basicPointer
+            , Pointer 7 1 3 True Nothing basicPointer
             ]
         ]
 
@@ -334,15 +336,26 @@ goldenTests = do
                 basicStyle
                 ("file.ext", 1, 16)
                 (Just "block header message")
-                [ Pointer 1 16 18 True (Just "start label")
-                , Pointer 2 6 7 False (Just "unconnected label")
-                , Pointer 3 6 7 True (Just "middle label")
-                , Pointer 8 6 7 True (Just "inner label")
-                , Pointer 8 12 15 True (Just "end label")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
                 ]
                 (Just "block body message")
             ]
             (Just "error body message")
+        ]
+
+    golden
+        "T030"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 2 4 False (Just "x") (basicPointer { styleHook = "1", styleUnderline = "." })
+            , Pointer 1 6 8 False (Just "y") (basicPointer { styleHook = "2", styleConnector = ":", styleUnderline = "~" })
+            , Pointer 1 10 12 False (Just "z") (basicPointer { styleUnderline = "^" })
+            , Pointer 2 5 8 False (Just "w") (basicPointer { styleUnderline = "'" })
+            ]
         ]
 
 -- | Create a golden test by printing a list of 'Errata'.

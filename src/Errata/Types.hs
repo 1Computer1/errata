@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 {- |
 Module      : Errata.Types
 Copyright   : (c) 2020 comp
@@ -22,12 +24,15 @@ module Errata.Types
     , Block (..)
     , Pointer (..)
     , pointerColumns
+    , pointerData
       -- * Styling options
     , Style (..)
+    , PointerStyle (..)
     , highlight
     ) where
 
 import qualified Data.Text as T
+import Data.Bifunctor (bimap, second)
 
 -- | Line number, starts at 1, increments every new line character.
 type Line = Int
@@ -101,12 +106,17 @@ data Pointer = Pointer
       -- ^ Whether this pointer connects with other pointers.
     , pointerLabel :: Maybe Label
       -- ^ An optional label for the pointer.
+    , pointerStyle :: PointerStyle
+      -- ^ A style for this pointer.
     }
-    deriving (Show, Eq)
 
 -- | Gets the column span for a 'Pointer'.
 pointerColumns :: Pointer -> (Column, Column)
-pointerColumns p = (pointerColStart p, pointerColEnd p)
+pointerColumns (Pointer {..}) = (pointerColStart, pointerColEnd)
+
+-- | Gets physical information about a pointer.
+pointerData :: Pointer -> (Line, Column, Column, Bool, Maybe Label)
+pointerData (Pointer {..}) = (pointerLine, pointerColStart, pointerColEnd, pointerConnect, pointerLabel)
 
 -- | Stylization options for a block, e.g. characters to use.
 data Style = Style
@@ -120,11 +130,13 @@ data Style = Style
 
       The result should visually be the same length as just @show n@.
       -}
-    , styleLine :: [(Column, Column)] -> T.Text -> T.Text
+    , styleLine :: [(PointerStyle, (Column, Column))] -> T.Text -> T.Text
       {- ^ Stylize a source line.
 
-      Column pointers of the text that are being underlined are given for highlighting purposes. The result of this
-      should visually take up the same space as the original line.
+      The style and the column span (sorted, starting at 1) of the text that is being underlined are given for
+      highlighting purposes (see 'highlight').
+      They can be ignored for source code highlighting instead, for example.
+      The result of this should visually take up the same space as the original line.
       -}
     , styleEllipsis :: T.Text
       {- ^ The text to use as an ellipsis in the position of line numbers for when lines are omitted.
@@ -135,11 +147,6 @@ data Style = Style
       {- ^ The prefix before the source lines.
 
       Before it may be the line number, and after it the source line.
-      -}
-    , styleUnderline :: T.Text
-      {- ^ The text to underline a character in a pointer.
-
-      This should visually be one character.
       -}
     , styleVertical :: T.Text
       {- ^ The text to use as a vertical bar when connecting pointers.
@@ -173,19 +180,42 @@ data Style = Style
       -}
     }
 
--- | Adds highlighting to spans of text by enclosing it with some text e.g ANSI escape codes.
+-- | Stylization options for an individual pointer, e.g. characters to use.
+data PointerStyle = PointerStyle
+  { styleHighlight :: T.Text -> T.Text
+    {- ^ Stylize the text that this pointer is underlining.
+
+    This is only used if 'styleLine' uses the given pointer styles, for example with 'highlight'.
+    The result of this should visually take up the same space as the original text.
+    -}
+  , styleUnderline :: T.Text
+    {- ^ The text to underline a character in a pointer.
+
+    This should visually be one character.
+    -}
+  , styleHook :: T.Text
+    {- ^ The text to use as a connector upwards and hooking to the right for the label of a pointer that drops down.
+
+    This probably looks best as one character.
+    -}
+  , styleConnector :: T.Text
+    {- ^ The text to use as a vertical bar when connecting a pointer that drops down to its label.
+
+    This should visually be one character.
+    -}
+  }
+
+-- | Adds highlighting to spans of text by modifying it with the given styles' highlights.
 highlight
-    :: T.Text             -- ^ Text to add before.
-    -> T.Text             -- ^ Text to add after.
-    -> [(Column, Column)] -- ^ Indices to enclose. These are column spans, starting at 1. They must not overlap.
-    -> T.Text             -- ^ Text to highlight.
+    :: [(PointerStyle, (Column, Column))] -- ^ Styles and columns to work on. These are sorted, starting at 1. They must not overlap.
+    -> T.Text                             -- ^ Text to highlight.
     -> T.Text
-highlight open close = go False . concatMap (\(a, b) -> [a, b])
+highlight [] xs = xs
+highlight ((p, (s, e)):ps) xs =
+    let (pre, xs') = T.splitAt (s - 1) xs
+        (txt, xs'') = T.splitAt (e - s) xs'
+        hi = styleHighlight p
+        ps' = second (both (\i -> i - e + 1)) <$> ps
+    in pre <> hi txt <> highlight ps' xs''
     where
-        go _ [] xs = xs
-        go False (i:is) xs =
-            let (a, ys) = T.splitAt (i - 1) xs
-            in a <> open <> go True (map (\x -> x - i + 1) is) ys
-        go True (i:is) xs =
-            let (a, ys) = T.splitAt (i - 1) xs
-            in a <> close <> go False (map (\x -> x - i + 1) is) ys
+        both f = bimap f f
