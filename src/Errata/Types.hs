@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 {- |
 Module      : Errata.Types
@@ -56,6 +57,7 @@ data Errata = Errata
     , errataBody :: Maybe Body
       -- ^ The message that appears below all the blocks.
     }
+    deriving (Show)
 
 {- | Information about a block in the source code, such as pointers and messages.
 
@@ -86,6 +88,7 @@ data Block = Block
       This will appear below the source lines.
       -}
     }
+    deriving (Show)
 
 {- | A pointer is the span of the source code at a line, from one column to another. Each of the positions start at 1.
 
@@ -107,6 +110,7 @@ data Pointer = Pointer
     , pointerStyle :: PointerStyle
       -- ^ A style for this pointer.
     }
+    deriving (Show)
 
 -- | Gets the column span for a 'Pointer'.
 pointerColumns :: Pointer -> (Column, Column)
@@ -178,6 +182,30 @@ data Style = Style
       -}
     }
 
+instance Show Style where
+  show (Style {..}) = concat
+    [ "Style {"
+    , "styleLocation = ", show $ styleLocation ("file", 1, 1)
+    , ", styleNumber = ", show $ styleNumber 3
+    , ", styleLine = ", show $ styleLine [(basicPointer, (1, 5))] "text"
+    , ", styleEllipsis = ", show styleEllipsis
+    , ", styleLinePrefix = ", show styleLinePrefix
+    , ", styleVertical = ", show styleVertical
+    , ", styleHorizontal = ", show styleHorizontal
+    , ", styleDownRight = ", show styleDownRight
+    , ", styleUpRight = ", show styleUpRight
+    , ", styleUpDownRight = ", show styleUpDownRight
+    , ", styleTabWidth = ", show styleTabWidth
+    , "}"
+    ]
+    where
+      basicPointer = PointerStyle
+        { styleHighlight = id
+        , styleUnderline = "^"
+        , styleHook = "|"
+        , styleConnector = "|"
+        }
+
 -- | Stylization options for an individual pointer, e.g. characters to use.
 data PointerStyle = PointerStyle
   { styleHighlight :: T.Text -> T.Text
@@ -202,3 +230,13 @@ data PointerStyle = PointerStyle
     This should visually be one character.
     -}
   }
+
+instance Show PointerStyle where
+  show (PointerStyle {..}) = concat
+    [ "PointerStyle {"
+    , "styleHighlight = ", show $ styleHighlight "text"
+    , ", styleUnderline = ", show styleUnderline
+    , ", styleHook = ", show styleHook
+    , ", styleConnector = ", show styleConnector
+    , "}"
+    ]
