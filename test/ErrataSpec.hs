@@ -363,10 +363,10 @@ golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
     { output = TL.toStrict $ prettyErrors source es
     , encodePretty = T.unpack
-    , testName = name
     , writeToFile = T.writeFile
     , readFromFile = T.readFile
-    , directory = "./test/.golden"
+    , goldenFile = "./test/.golden/" <> name <> "/golden"
+    , actualFile = Just ("./test/.golden/" <> name <> "/actual")
     , failFirstTime = False
     }
 

@@ -74,7 +74,7 @@ test-suite errata-test
   build-depends:
       errata
     , hspec >= 2.7 && < 3
-    , hspec-golden >= 0.1 && < 0.2
+    , hspec-golden >= 0.2 && < 0.3
   build-tool-depends:
       hspec-discover:hspec-discover >= 2.7 && < 3
   ghc-options:
