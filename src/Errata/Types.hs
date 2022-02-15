@@ -194,6 +194,8 @@ data Style = Style
       This includes the pointer connectors (as in 'Style') and the underlines, connectors, and labels
       (as in 'PointerStyle'). However, highlighting will still be applied.
       -}
+    , styleEnableLinePrefix :: Bool
+      -- ^ Whether to enable the line prefix.
     }
 
 instance Show Style where
@@ -215,6 +217,7 @@ instance Show Style where
     , ", stylePaddingTop = ", show stylePaddingTop
     , ", stylePaddingBottom = ", show stylePaddingBottom
     , ", styleEnableDecorations = ", show styleEnableDecorations
+    , ", styleEnableLinePrefix = ", show styleEnableLinePrefix
     , "}"
     ]
     where

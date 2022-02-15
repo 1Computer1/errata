@@ -528,6 +528,56 @@ goldenTests = do
             (Just "\nDid you mean to use one of these?\n\n    foldl\n    foldr")
         ]
 
+    golden
+        "T041"
+        "hello world"
+        [ Errata
+            (Just "error")
+            [ Block
+                (basicStyle { styleEnableLinePrefix = False })
+                ("simple", 1, 1)
+                Nothing
+                [Pointer 1 1 6 False (Just "ignored") basicPointer]
+                Nothing
+            ]
+            Nothing
+        ]
+
+    golden
+        "T042"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                (basicStyle { styleEnableLinePrefix = False })
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
+    golden
+        "T043"
+        "sum xs = fold (+) 0 xs"
+        [ Errata
+            (Just "─────── NAME UNKNOWN ───────\n\nThe name fold was not found.\n")
+            [ Block
+                (basicStyle { styleEnableLinePrefix = False })
+                ("file.hs", 1, 10)
+                Nothing
+                [Pointer 1 10 14 False Nothing basicPointer]
+                Nothing
+            ]
+            (Just "\nDid you mean to use one of these?\n\n    foldl\n    foldr")
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden

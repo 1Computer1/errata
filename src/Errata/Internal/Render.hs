@@ -197,17 +197,23 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
         -- Generic prefix without line number, used for non-source lines i.e. decorations.
         prefix :: TB.Builder
-        prefix = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix, " "]
+        prefix = if styleEnableLinePrefix
+            then mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix, " "]
+            else ""
 
         -- Prefix with a line number, used for source lines.
         linePrefix :: Line -> TB.Builder
-        linePrefix n = mconcat [TB.fromText (styleNumber n), replicateB (padding - length (show n)) " ", " ", TB.fromText styleLinePrefix, " "]
+        linePrefix n = if styleEnableLinePrefix
+            then mconcat [TB.fromText (styleNumber n), replicateB (padding - length (show n)) " ", " ", TB.fromText styleLinePrefix, " "]
+            else ""
 
         -- The resulting source lines with decorations; extra prefix included for padding.
         decoratedLines :: [TB.Builder]
         decoratedLines = [paddingLine | stylePaddingTop] <> makeDecoratedLines 0 slines<> [paddingLine | stylePaddingBottom]
             where
-                paddingLine = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
+                paddingLine = if styleEnableLinePrefix
+                    then mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
+                    else ""
 
         -- Whether there will be a multiline span in the block.
         hasConnMulti :: Bool
@@ -262,7 +268,9 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                         -- We only add the omission line if it doesn't take all of the lines.
                         LT -> let
                             -- Prefix and gutter for omitting lines when spanning many lines.
-                            omitPrefix = mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
+                            omitPrefix = if styleEnableLinePrefix
+                                then mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
+                                else ""
                             omitGutter = if
                                 | not styleEnableDecorations       -> ""
                                 | snd . connAround . fst $ head ls -> " " <> TB.fromText styleVertical

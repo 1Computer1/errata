@@ -38,6 +38,8 @@
 
 * Added option for toggling all decorations completely with `styleEnableDecorations` in `Style`. Useful if you only want highlighting and not underlining. Combine with `stylePaddingTop = False` for a compact source code block.
 
+* Added option for toggling the line prefixes with `styleEnableLinePrefix` in `Style`.
+
 * Added `Show` instances to all the types. Style functions are applied to some sample text.
 
 * Changed `Monoid` constraint of `Source` to just requiring an `emptySource` value.

@@ -69,6 +69,7 @@ basicStyle = Style
     , stylePaddingTop = True
     , stylePaddingBottom = False
     , styleEnableDecorations = True
+    , styleEnableLinePrefix = True
     }
 
 -- | Pointers using only ASCII characters.
@@ -124,6 +125,7 @@ fancyStyle = Style
     , stylePaddingTop = True
     , stylePaddingBottom = False
     , styleEnableDecorations = True
+    , styleEnableLinePrefix = True
     }
 
 -- | Pointers using Unicode characters and ANSI colors.
@@ -157,6 +159,7 @@ fancyRedStyle = Style
     , stylePaddingTop = True
     , stylePaddingBottom = False
     , styleEnableDecorations = True
+    , styleEnableLinePrefix = True
     }
 
 -- | Red pointers using Unicode characters and ANSI colors.
@@ -190,6 +193,7 @@ fancyYellowStyle = Style
     , stylePaddingTop = True
     , stylePaddingBottom = False
     , styleEnableDecorations = True
+    , styleEnableLinePrefix = True
     }
 
 -- | Yellow pointers using Unicode characters and ANSI colors.

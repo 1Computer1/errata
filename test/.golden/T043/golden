@@ -1,0 +1,13 @@
+─────── NAME UNKNOWN ───────
+
+The name fold was not found.
+
+--> file.hs:1:10
+
+sum xs = fold (+) 0 xs
+         ^^^^
+
+Did you mean to use one of these?
+
+    foldl
+    foldr
