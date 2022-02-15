@@ -448,6 +448,36 @@ goldenTests = do
             (Just "error body message")
         ]
 
+    golden
+        "T036"
+        "hello world"
+        [ Errata
+            (Just "error")
+            [ Block
+                (basicStyle { stylePaddingTop = False })
+                ("simple", 1, 1)
+                Nothing
+                [Pointer 1 1 6 False Nothing basicPointer]
+                Nothing
+            ]
+            Nothing
+        ]
+
+    golden
+        "T037"
+        "hello world"
+        [ Errata
+            (Just "error")
+            [ Block
+                (basicStyle { stylePaddingBottom = True })
+                ("simple", 1, 1)
+                Nothing
+                [Pointer 1 1 6 False Nothing basicPointer]
+                Nothing
+            ]
+            Nothing
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden

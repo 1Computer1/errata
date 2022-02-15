@@ -30,9 +30,11 @@
 
 * Added support for replacing tabs with spaces with the `styleTabWidth` option in `Style` (defaults to 4).
 
-* Added support for the lines before and after the omission line with `styleExtraLinesAfter` and `styleExtraLinesBefore` in `Style`.
+* Added option for the lines before and after the omission line with `styleExtraLinesAfter` and `styleExtraLinesBefore` in `Style`.
 
-* Added support for disabling the hook with `styleEnableHook` in `PointerStyle`.
+* Added option for padding lines before and after the source `stylePaddingTop` and `stylePaddingBottom` in `Style`.
+
+* Added option for disabling the hook with `styleEnableHook` in `PointerStyle`.
 
 * Added `Show` instances to all the types. Style functions are applied to some sample text.
 

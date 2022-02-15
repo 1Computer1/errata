@@ -184,6 +184,10 @@ data Style = Style
       -- ^ Maximum number of extra lines that can be added after the first line when skipping lines between two lines.
     , styleExtraLinesBefore :: Int
       -- ^ Maximum number of extra lines that can be added before the second line when skipping lines between two lines.
+    , stylePaddingTop :: Bool
+      -- ^ Whether to add a padding line before the first source line.
+    , stylePaddingBottom :: Bool
+      -- ^ Whether to add a padding line after the last source line.
     }
 
 instance Show Style where
@@ -202,6 +206,8 @@ instance Show Style where
     , ", styleTabWidth = ", show styleTabWidth
     , ", styleExtraLinesAfter = ", show styleExtraLinesAfter
     , ", styleExtraLinesBefore = ", show styleExtraLinesBefore
+    , ", stylePaddingTop = ", show stylePaddingTop
+    , ", stylePaddingBottom = ", show stylePaddingBottom
     , "}"
     ]
     where

@@ -171,7 +171,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
     where
         {- Terminology used in this code:
             ↓↓ gutter
-          │
+          │    ← padding line
         1 │   line 1 foo bar do
           │ ┌────────^───────^^
           │ │        │ ← connector
@@ -205,7 +205,9 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
         -- The resulting source lines with decorations; extra prefix included for padding.
         decoratedLines :: [TB.Builder]
-        decoratedLines = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix] : makeDecoratedLines 0 slines
+        decoratedLines = [paddingLine | stylePaddingTop] <> makeDecoratedLines 0 slines<> [paddingLine | stylePaddingBottom]
+            where
+                paddingLine = mconcat [replicateB padding " ", " ", TB.fromText styleLinePrefix]
 
         -- Whether there will be a multiline span in the block.
         hasConnMulti :: Bool
