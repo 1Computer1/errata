@@ -1,0 +1,27 @@
+name: Publish
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: haskell/actions/setup@v1
+        id: setup-haskell
+        with:
+          ghc-version: "9.2"
+          cabal-version: "3.4"
+
+      - run: cabal sdist
+      - run: cabal haddock --haddock-for-hackage --enable-doc
+
+      - uses: haskell-actions/hackage-publish@v1
+        with:
+          hackageToken: ${{ secrets.HACKAGE_AUTH_TOKEN }}
+          packagesPath: dist-newstyle/sdist/
+          docsPath: dist-newstyle/
+          publish: false
