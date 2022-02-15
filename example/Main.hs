@@ -61,6 +61,22 @@ foldExample = TL.putStrLn $ prettyErrors @String
         (Just "\nDid you mean to use one of these?\n\n    \x1b[31mfoldl\x1b[0m\n    \x1b[31mfoldr\x1b[0m")
     ]
 
+-- | The fold example with no decorations and padding.
+foldNoDecorExample :: IO ()
+foldNoDecorExample = TL.putStrLn $ prettyErrors @String
+    "sum xs = fold (+) 0 xs"
+    [ Errata
+        (Just "\x1b[31m─────── NAME UNKNOWN ───────\x1b[0m\n\nThe name \x1b[31mfold\x1b[0m was not found.\n")
+        [ Block
+            (fancyRedStyle { styleEnableDecorations = False, stylePaddingTop = False })
+            ("file.hs", 1, 10)
+            Nothing
+            [Pointer 1 10 14 False Nothing fancyRedPointer]
+            Nothing
+        ]
+        (Just "\nDid you mean to use one of these?\n\n    \x1b[31mfoldl\x1b[0m\n    \x1b[31mfoldr\x1b[0m")
+    ]
+
 -- | From the README.
 ifExample :: IO ()
 ifExample = TL.putStrLn $ prettyErrors @String
@@ -130,12 +146,35 @@ stylesExample style pstyle = TL.putStrLn $ prettyErrors @String
         (Just "error body message")
     ]
 
+-- | From a test, but with colors.
+noDecorExample :: IO ()
+noDecorExample = TL.putStrLn $ prettyErrors @String
+    "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+    [ Errata
+        (Just "error header message")
+        [ Block
+            (fancyRedStyle { styleEnableDecorations = False, stylePaddingTop = False })
+            ("file.ext", 1, 16)
+            (Just "block header message")
+            [ Pointer 1 16 18 True (Just "start label") fancyRedPointer
+            , Pointer 2 6 7 False (Just "unconnected label") fancyRedPointer
+            , Pointer 3 6 7 True (Just "middle label") fancyRedPointer
+            , Pointer 8 6 7 True (Just "inner label") fancyRedPointer
+            , Pointer 8 12 15 True (Just "end label") fancyRedPointer
+            ]
+            (Just "block body message")
+        ]
+        (Just "error body message")
+    ]
+
 main :: IO ()
 main = sequence_ . intersperse (putStrLn "") $
     [ jsonExample
     , foldExample
+    , foldNoDecorExample
     , ifExample
     , ifExample'
+    , noDecorExample
     ] <> map (uncurry stylesExample $) themes
     where
         themes =

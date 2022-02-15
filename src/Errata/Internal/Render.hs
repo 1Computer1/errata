@@ -235,9 +235,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         makeDecoratedLines extra ((n, l):ls)
             | extra < styleExtraLinesAfter =
                 let mid = if
-                        | snd (connAround n) -> TB.fromText styleVertical <> " "
-                        | hasConnMulti       -> "  "
-                        | otherwise          -> ""
+                        | not styleEnableDecorations -> ""
+                        | snd (connAround n)         -> TB.fromText styleVertical <> " "
+                        | hasConnMulti               -> "  "
+                        | otherwise                  -> ""
                 in (linePrefix n <> mid <> showLine [] l) : makeDecoratedLines (extra + 1) ls
         -- We reached the extra line limit, so now there's some logic to figure out what's next.
         makeDecoratedLines _ ls =
@@ -252,9 +253,10 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                     let es' = reverse . take styleExtraLinesBefore . reverse $ es
                         extras = flip map es' $ \(n, l) ->
                             let gutter = if
-                                    | snd (connAround n) -> TB.fromText styleVertical <> " "
-                                    | hasConnMulti       -> "  "
-                                    | otherwise          -> ""
+                                    | not styleEnableDecorations -> ""
+                                    | snd (connAround n)         -> TB.fromText styleVertical <> " "
+                                    | hasConnMulti               -> "  "
+                                    | otherwise                  -> ""
                             in linePrefix n <> gutter <> showLine [] l
                     in case compareLength es' es of
                         -- We only add the omission line if it doesn't take all of the lines.
@@ -262,6 +264,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                             -- Prefix and gutter for omitting lines when spanning many lines.
                             omitPrefix = mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
                             omitGutter = if
+                                | not styleEnableDecorations       -> ""
                                 | snd . connAround . fst $ head ls -> " " <> TB.fromText styleVertical
                                 | otherwise                        -> ""
                             in (omitPrefix <> omitGutter) : extras <> makeDecoratedLines 0 ls'
@@ -273,6 +276,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         decorateLine pointers (n, l) = (linePrefix n <> gutter <> stylizedLine) : decorationLines
             where
                 gutter = if
+                    | not styleEnableDecorations    -> ""
                     | hasConnBefore && hasConnUnder -> TB.fromText styleVertical <> " "
                     | hasConnMulti                  -> "  "
                     | otherwise                     -> ""
@@ -295,6 +299,7 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
 
                 -- The resulting decoration lines.
                 decorationLines = case filter (isJust . pointerLabel) (init pointersSorted) of
+                    _ | not styleEnableDecorations -> []
                     -- There's only one pointer, so no need for more than just an underline and label.
                     _ | length pointersSorted == 1 -> [underline pointersSorted]
                     -- There's no labels at all, so we just need the underline.

@@ -188,6 +188,12 @@ data Style = Style
       -- ^ Whether to add a padding line before the first source line.
     , stylePaddingBottom :: Bool
       -- ^ Whether to add a padding line after the last source line.
+    , styleEnableDecorations :: Bool
+      {- ^ Whether to enable decorations at all in this block.
+
+      This includes the pointer connectors (as in 'Style') and the underlines, connectors, and labels
+      (as in 'PointerStyle'). However, highlighting will still be applied.
+      -}
     }
 
 instance Show Style where
@@ -208,6 +214,7 @@ instance Show Style where
     , ", styleExtraLinesBefore = ", show styleExtraLinesBefore
     , ", stylePaddingTop = ", show stylePaddingTop
     , ", stylePaddingBottom = ", show stylePaddingBottom
+    , ", styleEnableDecorations = ", show styleEnableDecorations
     , "}"
     ]
     where

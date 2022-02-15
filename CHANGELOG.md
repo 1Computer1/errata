@@ -36,6 +36,8 @@
 
 * Added option for disabling the hook with `styleEnableHook` in `PointerStyle`.
 
+* Added option for toggling all decorations completely with `styleEnableDecorations` in `Style`. Useful if you only want highlighting and not underlining. Combine with `stylePaddingTop = False` for a compact source code block.
+
 * Added `Show` instances to all the types. Style functions are applied to some sample text.
 
 * Changed `Monoid` constraint of `Source` to just requiring an `emptySource` value.
