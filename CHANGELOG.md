@@ -2,7 +2,7 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
-## Unreleased (0.4.0.0)
+## 0.4.0.0
 
 * Added styling individual pointers with `PointerStyle` (e.g. characters, highlighting).
     * This changes how `styleLine` and `highlight` works and moves `styleUnderline` to `PointerStyle`.

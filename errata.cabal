@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name:          errata
-version:       0.3.0.0
+version:       0.4.0.0
 synopsis:      Source code error pretty printing
 description:
     An extremely customizable error pretty printer that can handle many kinds of error formatting.
