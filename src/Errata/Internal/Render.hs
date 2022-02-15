@@ -365,12 +365,17 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                         pointer = last ps
                         hook = styleHook (pointerStyle pointer)
                         lbl = maybe ""
-                            (\x -> mconcat
-                                [ replicateB (pointerColStart pointer - finalCol) " "
-                                , TB.fromText hook
-                                , " "
-                                , TB.fromText x
-                                ]
+                            (\x -> if
+                                | styleEnableHook (pointerStyle pointer) -> mconcat
+                                    [ replicateB (pointerColStart pointer - finalCol) " "
+                                    , TB.fromText hook
+                                    , " "
+                                    , TB.fromText x
+                                    ]
+                                | otherwise -> mconcat
+                                    [ replicateB (pointerColStart pointer - finalCol) " "
+                                    , TB.fromText x
+                                    ]
                             )
                             (pointerLabel pointer)
                         decorGutter = if

@@ -204,6 +204,7 @@ instance Show Style where
         , styleUnderline = "^"
         , styleHook = "|"
         , styleConnector = "|"
+        , styleEnableHook = True
         }
 
 -- | Stylization options for an individual pointer, e.g. characters to use.
@@ -211,7 +212,7 @@ data PointerStyle = PointerStyle
   { styleHighlight :: T.Text -> T.Text
     {- ^ Stylize the text that this pointer is underlining.
 
-    This is only used if 'styleLine' uses the given pointer styles, for example with 'highlight'.
+    This is only used if 'styleLine' uses the given pointer styles, for example with 'Errata.Styles.highlight'.
     The result of this should visually take up the same space as the original text.
     -}
   , styleUnderline :: T.Text
@@ -229,6 +230,8 @@ data PointerStyle = PointerStyle
 
     This should visually be one character.
     -}
+  , styleEnableHook :: Bool
+    -- ^ Whether to use the hook for labels that drop down, or simply start the label directly under the connector.
   }
 
 instance Show PointerStyle where
@@ -238,5 +241,6 @@ instance Show PointerStyle where
     , ", styleUnderline = ", show styleUnderline
     , ", styleHook = ", show styleHook
     , ", styleConnector = ", show styleConnector
+    , ", styleEnableHook = ", show styleEnableHook
     , "}"
     ]

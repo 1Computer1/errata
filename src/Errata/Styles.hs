@@ -73,6 +73,7 @@ basicPointer = PointerStyle
     , styleUnderline = "^"
     , styleHook = "|"
     , styleConnector = "|"
+    , styleEnableHook = True
     }
 
 {- | A fancy style using Unicode characters.
@@ -122,6 +123,7 @@ fancyPointer = PointerStyle
     , styleUnderline = "^"
     , styleHook = "└"
     , styleConnector = "│"
+    , styleEnableHook = True
     }
 
 -- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored red.
@@ -149,6 +151,7 @@ fancyRedPointer = PointerStyle
     , styleUnderline = "\x1b[31m^\x1b[0m"
     , styleHook = "\x1b[31m└\x1b[0m"
     , styleConnector = "\x1b[31m│\x1b[0m"
+    , styleEnableHook = True
     }
 
 -- | A fancy style using Unicode characters and ANSI colors, similar to 'fancyStyle'. Most things are colored yellow.
@@ -176,6 +179,7 @@ fancyYellowPointer = PointerStyle
     , styleUnderline = "\x1b[33m^\x1b[0m"
     , styleHook = "\x1b[33m└\x1b[0m"
     , styleConnector = "\x1b[33m│\x1b[0m"
+    , styleEnableHook = True
     }
 
 -- | Adds highlighting to spans of text by modifying it with the given styles' highlights.

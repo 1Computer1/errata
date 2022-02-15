@@ -358,6 +358,16 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T031"
+        "abcdefghijk\nlmnopqrstuv\nwxyzfoobar"
+        [ adhoc
+            [ Pointer 1 2 4 False (Just "x") (basicPointer { styleEnableHook = False })
+            , Pointer 1 6 8 False (Just "y") (basicPointer { styleEnableHook = False })
+            , Pointer 1 10 12 False (Just "z") (basicPointer { styleEnableHook = False })
+            ]
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
