@@ -30,6 +30,10 @@
 
 * Added support for replacing tabs with spaces with the `styleTabWidth` option in `Style` (defaults to 4).
 
+* Added support for the lines before and after the omission line with `styleExtraLinesAfter` and `styleExtraLinesBefore` in `Style`.
+
+* Added support for disabling the hook with `styleEnableHook` in `PointerStyle`.
+
 * Added `Show` instances to all the types. Style functions are applied to some sample text.
 
 * Changed `Monoid` constraint of `Source` to just requiring an `emptySource` value.
