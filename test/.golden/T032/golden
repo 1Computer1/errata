@@ -1,0 +1,17 @@
+error header message
+--> file.ext:1:16
+block header message
+  |
+1 |   line 1 foo bar do
+  |  ________________^^ start label
+2 | | line 2
+  | |      ^ unconnected label
+3 | | line 3
+  | |______^ middle label
+. | |
+8 | | line 8 baz end
+  | |______^_____^^^ end label
+  |        |
+  |        | inner label
+block body message
+error body message

@@ -64,6 +64,8 @@ basicStyle = Style
     , styleUpRight = "|"
     , styleUpDownRight = "|"
     , styleTabWidth = 4
+    , styleExtraLinesAfter = 2
+    , styleExtraLinesBefore = 1
     }
 
 -- | Pointers using only ASCII characters.
@@ -114,6 +116,8 @@ fancyStyle = Style
     , styleUpDownRight = "├"
     , styleUpRight = "└"
     , styleTabWidth = 4
+    , styleExtraLinesAfter = 2
+    , styleExtraLinesBefore = 1
     }
 
 -- | Pointers using Unicode characters and ANSI colors.
@@ -142,6 +146,8 @@ fancyRedStyle = Style
     , styleUpDownRight = "\x1b[31m├\x1b[0m"
     , styleUpRight = "\x1b[31m└\x1b[0m"
     , styleTabWidth = 4
+    , styleExtraLinesAfter = 2
+    , styleExtraLinesBefore = 1
     }
 
 -- | Red pointers using Unicode characters and ANSI colors.
@@ -170,6 +176,8 @@ fancyYellowStyle = Style
     , styleUpRight = "\x1b[33m└\x1b[0m"
     , styleUpDownRight = "\x1b[33m├\x1b[0m"
     , styleTabWidth = 4
+    , styleExtraLinesAfter = 2
+    , styleExtraLinesBefore = 1
     }
 
 -- | Yellow pointers using Unicode characters and ANSI colors.

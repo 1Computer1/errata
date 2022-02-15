@@ -180,6 +180,10 @@ data Style = Style
 
       Your source will have tabs replaced with this many spaces.
       -}
+    , styleExtraLinesAfter :: Int
+      -- ^ Maximum number of extra lines that can be added after the first line when skipping lines between two lines.
+    , styleExtraLinesBefore :: Int
+      -- ^ Maximum number of extra lines that can be added before the second line when skipping lines between two lines.
     }
 
 instance Show Style where
@@ -196,6 +200,8 @@ instance Show Style where
     , ", styleUpRight = ", show styleUpRight
     , ", styleUpDownRight = ", show styleUpDownRight
     , ", styleTabWidth = ", show styleTabWidth
+    , ", styleExtraLinesAfter = ", show styleExtraLinesAfter
+    , ", styleExtraLinesBefore = ", show styleExtraLinesBefore
     , "}"
     ]
     where

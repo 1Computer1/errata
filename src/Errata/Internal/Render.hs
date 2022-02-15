@@ -229,9 +229,9 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
         -- The next line is a line we have to decorate with pointers.
         makeDecoratedLines _ (pr@(n, _):ls)
             | Just p <- I.lookup n pointersGrouped = decorateLine p pr <> makeDecoratedLines 0 ls
-        -- The next line is an extra line, within a limit (currently 2, may be configurable later).
+        -- The next line is an extra line, within a limit.
         makeDecoratedLines extra ((n, l):ls)
-            | extra < 2 =
+            | extra < styleExtraLinesAfter =
                 let mid = if
                         | snd (connAround n) -> TB.fromText styleVertical <> " "
                         | hasConnMulti       -> "  "
@@ -245,28 +245,25 @@ renderSourceLines slines (Block {..}) padding pointersGrouped = Just $ unsplit "
                 (_, []) -> []
                 -- There are lines left to decorate, and it came right after.
                 ([], _) -> makeDecoratedLines 0 ls'
-                -- There is a single extra line, so we can use that as the before-line.
-                -- No need for omission, because it came right before.
-                ([(n, l)], _) ->
-                    let gutter = if
-                            | snd (connAround n) -> TB.fromText styleVertical <> " "
-                            | hasConnMulti       -> "  "
-                            | otherwise          -> ""
-                    in (linePrefix n <> gutter <> showLine [] l) : makeDecoratedLines 0 ls'
-                -- There are more than one line in between, so we omit all but the last.
-                -- We use the last one as the before-line.
+                -- There are more than one line in between, so we take as much as is configured.
                 (_, _) ->
-                    let (n, l) = last es
-                        gutter = if
-                            | snd (connAround n) -> TB.fromText styleVertical <> " "
-                            | hasConnMulti       -> "  "
-                            | otherwise          -> ""
-                        -- Prefix and gutter for omitting lines when spanning many lines.
-                        omitPrefix = mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
-                        omitGutter = if
-                            | snd (connAround n) -> " " <> TB.fromText styleVertical
-                            | otherwise          -> ""
-                    in (omitPrefix <> omitGutter) : (linePrefix n <> gutter <> showLine [] l) : makeDecoratedLines 0 ls'
+                    let es' = reverse . take styleExtraLinesBefore . reverse $ es
+                        extras = flip map es' $ \(n, l) ->
+                            let gutter = if
+                                    | snd (connAround n) -> TB.fromText styleVertical <> " "
+                                    | hasConnMulti       -> "  "
+                                    | otherwise          -> ""
+                            in linePrefix n <> gutter <> showLine [] l
+                    in case compareLength es' es of
+                        -- We only add the omission line if it doesn't take all of the lines.
+                        LT -> let
+                            -- Prefix and gutter for omitting lines when spanning many lines.
+                            omitPrefix = mconcat [TB.fromText styleEllipsis, replicateB (padding - 1) " ", " ", TB.fromText styleLinePrefix]
+                            omitGutter = if
+                                | snd . connAround . fst $ head ls -> " " <> TB.fromText styleVertical
+                                | otherwise                        -> ""
+                            in (omitPrefix <> omitGutter) : extras <> makeDecoratedLines 0 ls'
+                        _ -> extras <> makeDecoratedLines 0 ls'
 
         -- Decorate a line that has pointers.
         -- The pointers we get are assumed to be all on the same line.
@@ -426,6 +423,13 @@ paral _ b [] = b
 paral f b (a:as) =
     let !b' = f (as, b) a
     in paral f b' as
+
+-- | Compares length of two lists without traversing them completely.
+compareLength :: [a] -> [b] -> Ordering
+compareLength []     []     = EQ
+compareLength (_:xs) (_:ys) = compareLength xs ys
+compareLength []     _      = LT
+compareLength _      []     = GT
 
 -- | Puts text between each item.
 unsplit :: TB.Builder -> [TB.Builder] -> TB.Builder

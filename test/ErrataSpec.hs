@@ -368,6 +368,86 @@ goldenTests = do
             ]
         ]
 
+    golden
+        "T032"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                (basicStyle { styleExtraLinesAfter = 0, styleExtraLinesBefore = 0 })
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
+    golden
+        "T033"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                (basicStyle { styleExtraLinesAfter = 2, styleExtraLinesBefore = 2 })
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
+    golden
+        "T034"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                (basicStyle { styleExtraLinesAfter = 1, styleExtraLinesBefore = 2 })
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
+    golden
+        "T035"
+        "line 1 foo bar do\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8 baz end"
+        [ Errata
+            (Just "error header message")
+            [ Block
+                (basicStyle { styleExtraLinesAfter = 1, styleExtraLinesBefore = 1 })
+                ("file.ext", 1, 16)
+                (Just "block header message")
+                [ Pointer 1 16 18 True (Just "start label") basicPointer
+                , Pointer 2 6 7 False (Just "unconnected label") basicPointer
+                , Pointer 3 6 7 True (Just "middle label") basicPointer
+                , Pointer 8 6 7 True (Just "inner label") basicPointer
+                , Pointer 8 12 15 True (Just "end label") basicPointer
+                ]
+                (Just "block body message")
+            ]
+            (Just "error body message")
+        ]
+
 -- | Create a golden test by printing a list of 'Errata'.
 golden :: String -> T.Text -> [Errata] -> Spec
 golden name source es = it name $ Golden
