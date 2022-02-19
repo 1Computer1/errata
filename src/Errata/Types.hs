@@ -199,35 +199,35 @@ data Style = Style
     }
 
 instance Show Style where
-  show (Style {..}) = concat
-    [ "Style {"
-    , "styleLocation = ", show $ styleLocation ("file", 1, 1)
-    , ", styleNumber = ", show $ styleNumber 3
-    , ", styleLine = ", show $ styleLine [(basicPointer, (1, 5))] "text"
-    , ", styleEllipsis = ", show styleEllipsis
-    , ", styleLinePrefix = ", show styleLinePrefix
-    , ", styleVertical = ", show styleVertical
-    , ", styleHorizontal = ", show styleHorizontal
-    , ", styleDownRight = ", show styleDownRight
-    , ", styleUpRight = ", show styleUpRight
-    , ", styleUpDownRight = ", show styleUpDownRight
-    , ", styleTabWidth = ", show styleTabWidth
-    , ", styleExtraLinesAfter = ", show styleExtraLinesAfter
-    , ", styleExtraLinesBefore = ", show styleExtraLinesBefore
-    , ", stylePaddingTop = ", show stylePaddingTop
-    , ", stylePaddingBottom = ", show stylePaddingBottom
-    , ", styleEnableDecorations = ", show styleEnableDecorations
-    , ", styleEnableLinePrefix = ", show styleEnableLinePrefix
-    , "}"
-    ]
-    where
-      basicPointer = PointerStyle
-        { styleHighlight = id
-        , styleUnderline = "^"
-        , styleHook = "|"
-        , styleConnector = "|"
-        , styleEnableHook = True
-        }
+    show (Style {..}) = concat
+        [ "Style {"
+        , "styleLocation = ", show $ styleLocation ("file", 1, 1)
+        , ", styleNumber = ", show $ styleNumber 3
+        , ", styleLine = ", show $ styleLine [(basicPointer, (1, 5))] "text"
+        , ", styleEllipsis = ", show styleEllipsis
+        , ", styleLinePrefix = ", show styleLinePrefix
+        , ", styleVertical = ", show styleVertical
+        , ", styleHorizontal = ", show styleHorizontal
+        , ", styleDownRight = ", show styleDownRight
+        , ", styleUpRight = ", show styleUpRight
+        , ", styleUpDownRight = ", show styleUpDownRight
+        , ", styleTabWidth = ", show styleTabWidth
+        , ", styleExtraLinesAfter = ", show styleExtraLinesAfter
+        , ", styleExtraLinesBefore = ", show styleExtraLinesBefore
+        , ", stylePaddingTop = ", show stylePaddingTop
+        , ", stylePaddingBottom = ", show stylePaddingBottom
+        , ", styleEnableDecorations = ", show styleEnableDecorations
+        , ", styleEnableLinePrefix = ", show styleEnableLinePrefix
+        , "}"
+        ]
+        where
+            basicPointer = PointerStyle
+                { styleHighlight = id
+                , styleUnderline = "^"
+                , styleHook = "|"
+                , styleConnector = "|"
+                , styleEnableHook = True
+                }
 
 -- | Stylization options for an individual pointer, e.g. characters to use.
 data PointerStyle = PointerStyle
@@ -257,12 +257,12 @@ data PointerStyle = PointerStyle
   }
 
 instance Show PointerStyle where
-  show (PointerStyle {..}) = concat
-    [ "PointerStyle {"
-    , "styleHighlight = ", show $ styleHighlight "text"
-    , ", styleUnderline = ", show styleUnderline
-    , ", styleHook = ", show styleHook
-    , ", styleConnector = ", show styleConnector
-    , ", styleEnableHook = ", show styleEnableHook
-    , "}"
-    ]
+    show (PointerStyle {..}) = concat
+        [ "PointerStyle {"
+        , "styleHighlight = ", show $ styleHighlight "text"
+        , ", styleUnderline = ", show styleUnderline
+        , ", styleHook = ", show styleHook
+        , ", styleConnector = ", show styleConnector
+        , ", styleEnableHook = ", show styleEnableHook
+        , "}"
+        ]
