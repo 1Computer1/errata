@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name:          errata
-version:       0.4.0.0
+version:       0.4.0.1
 synopsis:      Source code error pretty printing
 description:
     An extremely customizable error pretty printer that can handle many kinds of error formatting.
@@ -36,7 +36,7 @@ flag usewcwidth
 
 common common-options
   build-depends:
-      base >= 4.12 && < 4.17
+      base >= 4.12 && < 5
     , containers >= 0.6 && < 0.7
     , text >= 1.2.3 && < 2.1
   ghc-options:
