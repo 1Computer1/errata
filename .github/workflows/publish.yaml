@@ -8,13 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: haskell/actions/setup@v1
+      - uses: haskell/actions/setup@v2
         id: setup-haskell
         with:
-          ghc-version: "9.2"
-          cabal-version: "3.4"
+          ghc-version: "latest"
+          cabal-version: "latest"
 
       - run: cabal sdist
       - run: cabal haddock --haddock-for-hackage --enable-doc
