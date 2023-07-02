@@ -2,6 +2,10 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
+## 0.4.0.1
+
+* Updated for GHC 9.4 and 9.6.
+
 ## 0.4.0.0
 
 * Added styling individual pointers with `PointerStyle` (e.g. characters, highlighting).
