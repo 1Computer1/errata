@@ -11,7 +11,7 @@ import           Errata
 import           Errata.Styles
 import           Errata.Types
 import           Test.Hspec
-import           Test.Hspec.Golden
+import           Test.Hspec.Golden (Golden(..))
 
 spec :: Spec
 spec = do
