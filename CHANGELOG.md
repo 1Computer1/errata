@@ -2,6 +2,14 @@
 
 **Errata** uses [PVP Versioning](https://pvp.haskell.org).
 
+## 0.4.0.3
+
+* Updated for GHC 9.10.
+
+## 0.4.0.2
+
+* Updated for GHC 9.8.
+
 ## 0.4.0.1
 
 * Updated for GHC 9.4 and 9.6.
